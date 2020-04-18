@@ -6,7 +6,7 @@
 /******************************************************************************/
 /*                           Component declarations                           */
 
-allCards = new resource.CardSet({
+const allCards = new resource.CardSet({
   guard   : "https://dixonary.co.uk/static/love-letter/guard.png",
   priest  : "https://dixonary.co.uk/static/love-letter/priest.png",
   baron   : "https://dixonary.co.uk/static/love-letter/baron.png",
@@ -15,7 +15,12 @@ allCards = new resource.CardSet({
   king    : "https://dixonary.co.uk/static/love-letter/king.png",
   countess: "https://dixonary.co.uk/static/love-letter/countess.png",
   princess: "https://dixonary.co.uk/static/love-letter/princess.png",
-}, "https://dixonary.co.uk/static/love-letter/back.png");
+}
+, "https://dixonary.co.uk/static/love-letter/back.png",
+, {
+  cardWidth:0.065,
+  cardHeight:0.09
+});
 
 const deck = Deck.fromCardSet(
   allCards,
@@ -29,10 +34,6 @@ const deck = Deck.fromCardSet(
     king: 1,
     countess:1,
     princess:1
-  },
-  {
-    cardWidth:0.065,
-    cardHeight:0.09
   }
 );
 
