@@ -36,21 +36,6 @@ class ClientGrabber extends Grabber {
     }
   }
 
-  attachObject(gameObj: GameObject) {
-    if (this.attached) return;
-    if (gameObj.runCallback("attach", this)) {
-      this.attached = gameObj;
-      this.position.copy(this.attached.position);
-    }
-  }
-
-  detachObject() {
-    if (!this.attached) return;
-    if (this.attached.runCallback("detach", this)) {
-      this.attached = null;
-    }
-  }
-
   update(delta: number) {
     const { scene, camera } = (window as any) as GlobalAccess;
 
@@ -83,7 +68,7 @@ class ClientGrabber extends Grabber {
 
     // Only consider the closest such object
     if (intersects[0]) {
-      //The parent MUST be a GameObject by definition
+      //The parent is a GameObject by definition
       this.changeSelection(intersects[0].object.parent as GameObject);
     } else {
       this.deselect();
@@ -95,16 +80,6 @@ class ClientGrabber extends Grabber {
     }
   }
 
-  deselect() {
-    if (!this.highlighted) return;
-
-    // Only continue if permitted
-    if (this.highlighted.runCallback("highlight_off")) {
-      Log.Info("De-highlighted " + this.highlighted.constructor.name);
-      this.highlighted = null;
-    }
-  }
-
   changeSelection(newHighlight: GameObject) {
     // This is meaningless if the highlight is unchanged
     if (newHighlight === this.highlighted) return;
@@ -112,6 +87,10 @@ class ClientGrabber extends Grabber {
     // Deselect the current thing, if there is one
     if (this.highlighted) {
       this.highlighted.runCallback("highlight_off");
+
+      if (this.mousePressed) {
+        this.highlighted.runCallback("drag_out", this);
+      }
     }
 
     // Only continue if permitted
@@ -119,6 +98,20 @@ class ClientGrabber extends Grabber {
       Log.Info("Highlighted " + newHighlight.constructor.name);
       this.highlighted = newHighlight;
     } else {
+      this.highlighted = null;
+    }
+  }
+
+  deselect() {
+    if (!this.highlighted) return;
+
+    if (this.mousePressed) {
+      this.highlighted.runCallback("drag_out", this);
+    }
+
+    // Only deselect if permitted
+    if (this.highlighted.runCallback("highlight_off")) {
+      Log.Info("De-highlighted " + this.highlighted.constructor.name);
       this.highlighted = null;
     }
   }

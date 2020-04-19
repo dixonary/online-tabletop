@@ -32,11 +32,19 @@ class Deck extends GameObject {
     this.add(this.pile);
     this.add(this.region);
 
-    this.pile.addPre("drag_out", () => this.contents.length > 1);
+    this.pile.addPre("drag_out", () => this.contents.length > 0);
     this.pile.on("drag_out", (grabber: Grabber) => {
       const topCard = this.contents.shift() as Card;
-      topCard.runCallback("appear");
-      grabber.attach(topCard);
+
+      // Set the card's position to the deck's position
+      this.getWorldPosition(topCard.position);
+      topCard.position.y += Card.thickness * this.pile.count;
+
+      // Reduce the size of the pile
+      this.pile.setCount(this.contents.length - 1);
+
+      topCard.appear();
+      grabber.attachObject(topCard);
     });
   }
 }
@@ -208,9 +216,6 @@ class Card extends GameObject {
     this.data = extraData;
     this.cardBack = cardBack;
     this.cardFront = cardFront;
-
-    this.on("appear", this.appear.bind(this));
-    this.on("disappear", this.disappear.bind(this));
   }
 
   appear() {

@@ -6,6 +6,21 @@ import { GameObject } from "./Game";
  */
 class Grabber extends Object3D {
   attached: GameObject | null = null;
+
+  attachObject(gameObj: GameObject) {
+    if (this.attached) return;
+    if (gameObj.runCallback("attach", this)) {
+      this.attached = gameObj;
+      this.position.copy(this.attached.position);
+    }
+  }
+
+  detachObject() {
+    if (!this.attached) return;
+    if (this.attached.runCallback("detach", this)) {
+      this.attached = null;
+    }
+  }
 }
 
 export default Grabber;

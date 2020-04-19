@@ -83,6 +83,7 @@ class GameObject extends Group {
       const fail = this.preconditions[cbName].find((x: () => boolean) => !x());
       if (fail) return false;
     }
+    Log.Info(`${this.constructor.name}::${cbName}`);
     this.callbacks[cbName].forEach((func: (...params: any[]) => any) =>
       func(...params)
     );
