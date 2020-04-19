@@ -81,7 +81,7 @@ class Message {
     const elem = document.createElement("div") as HTMLDivElement;
     elem.classList.add("message");
 
-    elem.innerText = message.toString();
+    elem.innerText = `${message}`;
 
     this.created = Date.now();
     this.parent = parent;

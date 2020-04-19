@@ -47,6 +47,13 @@ class CardPile extends GameObject {
   entity: Mesh | undefined;
   cardBack: Texture | undefined;
 
+  constructor() {
+    super();
+    this.addPre("attach", () => {
+      return false;
+    });
+  }
+
   setBack(back: Texture) {
     this.cardBack = back;
     if (this.entity) {

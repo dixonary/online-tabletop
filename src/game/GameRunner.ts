@@ -67,7 +67,7 @@ class GameRunner {
         });
       }
     } catch (e) {
-      console.error(e);
+      Log.Error(e);
     }
   }
 

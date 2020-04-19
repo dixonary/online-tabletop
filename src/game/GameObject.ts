@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { Group, Mesh } from "three";
-import Grabber from "./Grabber";
+import Log from "./Log";
 
 /**
  * The main elements of a scene.
  * They embed a LOT of functionality including the ability to be highlighted,
- * manipulated by Grabbers, and have events registered and called on them.
+ * and may have events registered and called on them.
  */
 class GameObject extends Group {
   callbacks: any = {};
@@ -13,7 +13,6 @@ class GameObject extends Group {
   main: Mesh | undefined;
   highlight: THREE.LineSegments | undefined;
   highlighted: boolean = false;
-  followAttach: any;
 
   constructor() {
     super();
@@ -33,16 +32,6 @@ class GameObject extends Group {
     this.on("highlight_off", () => {
       if (this.highlight) this.remove(this.highlight);
       this.highlighted = false;
-    });
-
-    this.addPre("attach", () => !this.followAttach);
-    this.on("attach", (grabber: Grabber) => {
-      this.followAttach = () => this.position.copy(grabber.position);
-      this.on("update", this.followAttach);
-    });
-    this.on("detach", (grabber: Grabber) => {
-      this.off("update", this.followAttach);
-      this.followAttach = null;
     });
   }
 
@@ -64,6 +53,7 @@ class GameObject extends Group {
   /* Callback precondition management */
   addPre(cbName: string, pre: () => boolean) {
     if (!this.preconditions[cbName]) this.preconditions[cbName] = [];
+
     this.preconditions[cbName].push(pre);
   }
   removePre(cbName: string, pre: () => boolean) {
@@ -81,11 +71,14 @@ class GameObject extends Group {
   off(cbName: string, cb: any) {
     if (!this.callbacks[cbName]) return;
 
-    this.callbacks[cbName].remove(cb);
+    this.callbacks[cbName] = this.callbacks[cbName].filter(
+      (x: any) => x !== cb
+    );
     if (this.callbacks[cbName].length === 0) this.callbacks[cbName] = null;
   }
   runCallback(cbName: string, ...params: any[]) {
-    if (!this.callbacks[cbName]) return true;
+    if (!this.callbacks[cbName] && !this.preconditions[cbName]) return true;
+
     if (this.preconditions[cbName]) {
       const fail = this.preconditions[cbName].find((x: () => boolean) => !x());
       if (fail) return false;

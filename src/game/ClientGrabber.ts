@@ -1,4 +1,4 @@
-import { Raycaster, Vector2, Mesh } from "three";
+import { Raycaster, Vector2, Mesh, Plane, Vector3, PlaneHelper } from "three";
 import { GlobalAccess } from "../GameRenderer";
 import { GameObject } from "./Game";
 import Grabber from "./Grabber";
@@ -9,6 +9,7 @@ class ClientGrabber extends Grabber {
   mouse: Vector2;
   mousePressed: boolean = false;
   highlighted: GameObject | null = null;
+  planeHelper: PlaneHelper | null = null;
 
   constructor(mouse: Vector2) {
     super();
@@ -17,17 +18,37 @@ class ClientGrabber extends Grabber {
     const { scene } = (window as any) as GlobalAccess;
     scene.add(this);
 
-    window.addEventListener("mousedown", this.grab);
-    window.addEventListener("mouseup", this.release);
+    window.addEventListener("mousedown", this.grab.bind(this));
+    window.addEventListener("mouseup", this.release.bind(this));
   }
 
   grab() {
     this.mousePressed = true;
-    Log.Info("press");
+
+    if (this.highlighted) {
+      this.attachObject(this.highlighted);
+    }
   }
   release() {
     this.mousePressed = false;
-    Log.Info("release");
+    if (this.attached) {
+      this.detachObject();
+    }
+  }
+
+  attachObject(gameObj: GameObject) {
+    if (this.attached) return;
+    if (gameObj.runCallback("attach", this)) {
+      this.attached = gameObj;
+      this.position.copy(this.attached.position);
+    }
+  }
+
+  detachObject() {
+    if (!this.attached) return;
+    if (this.attached.runCallback("detach", this)) {
+      this.attached = null;
+    }
   }
 
   update(delta: number) {
@@ -35,7 +56,20 @@ class ClientGrabber extends Grabber {
 
     this.raycaster.setFromCamera(this.mouse, camera);
 
-    // calculate objects intersecting the picking ray
+    // Update position while attached
+    if (this.attached) {
+      const newPos = new Vector3(0, 0, 0);
+      const plane = new Plane(new Vector3(0, -1, 0), this.position.y);
+      if (this.planeHelper) {
+        scene.remove(this.planeHelper);
+      }
+      scene.add((this.planeHelper = new PlaneHelper(plane, 1)));
+      this.raycaster.ray.intersectPlane(plane, newPos);
+      this.position.copy(newPos);
+      this.attached.position.copy(this.position);
+    }
+
+    // List all objects which are viable targets
     const collidables: Mesh[] = [];
     scene.traverseVisible((o) => {
       if (o instanceof GameObject) {
@@ -44,32 +78,48 @@ class ClientGrabber extends Grabber {
       }
     });
 
+    // Find which of those intersect our picking ray
     var intersects = this.raycaster.intersectObjects(collidables);
 
     // Only consider the closest such object
     if (intersects[0]) {
       //The parent MUST be a GameObject by definition
-      let gameObj = intersects[0].object.parent as GameObject;
-
-      if (this.highlighted !== gameObj) {
-        if (this.highlighted) {
-          this.highlighted.runCallback("highlight_off");
-        }
-        if (gameObj.runCallback("highlight_on")) {
-          this.highlighted = gameObj;
-        } else {
-          this.highlighted = null;
-        }
-      }
+      this.changeSelection(intersects[0].object.parent as GameObject);
     } else {
-      if (this.highlighted) {
-        this.highlighted.runCallback("highlight_off");
-      }
-      this.highlighted = null;
+      this.deselect();
     }
 
+    // Update the highlight (position, rotation, etc)
     if (this.highlighted) {
       this.highlighted.runCallback("highlight_update");
+    }
+  }
+
+  deselect() {
+    if (!this.highlighted) return;
+
+    // Only continue if permitted
+    if (this.highlighted.runCallback("highlight_off")) {
+      Log.Info("De-highlighted " + this.highlighted.constructor.name);
+      this.highlighted = null;
+    }
+  }
+
+  changeSelection(newHighlight: GameObject) {
+    // This is meaningless if the highlight is unchanged
+    if (newHighlight === this.highlighted) return;
+
+    // Deselect the current thing, if there is one
+    if (this.highlighted) {
+      this.highlighted.runCallback("highlight_off");
+    }
+
+    // Only continue if permitted
+    if (newHighlight.runCallback("highlight_on")) {
+      Log.Info("Highlighted " + newHighlight.constructor.name);
+      this.highlighted = newHighlight;
+    } else {
+      this.highlighted = null;
     }
   }
 }
