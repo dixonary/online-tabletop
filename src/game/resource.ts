@@ -1,6 +1,7 @@
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { TextureLoader } from "three/src/loaders/TextureLoader";
+import Log from "./Log";
 
 const cache = {
   STL: new Map<string, STL>(),
@@ -50,10 +51,13 @@ class Resource {
   }
 
   loadingError(err: any) {
-    console.error(
-      "Couldn't load the following resource:\n" + this.url + "\n" + err
+    Log.Error(
+      "Couldn't load the following resource:\n" + this.url + "\n"
     );
+    this.decache();
   }
+
+  decache() {}
 }
 
 class OBJ extends Resource {
@@ -66,6 +70,9 @@ class OBJ extends Resource {
       this.loadingError.bind(this)
     );
     cache.OBJ.set(url, this);
+  }
+  decache() {
+    cache.OBJ.delete(this.url);
   }
   static get(url: string) {
     const current = cache.OBJ.get(url);
@@ -88,6 +95,9 @@ class STL extends Resource {
       this.loadingError.bind(this)
     );
     cache.STL.set(url, this);
+  }
+  decache() {
+    cache.STL.delete(this.url);
   }
   static get(url: string) {
     const current = cache.STL.get(url);
@@ -112,6 +122,9 @@ class Texture extends Resource {
       )
     );
     cache.Texture.set(url, this);
+  }
+  decache() {
+    cache.Texture.delete(this.url);
   }
   static get(url: string) {
     const current = cache.Texture.get(url);

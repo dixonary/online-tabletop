@@ -35,17 +35,20 @@ class Tabletop extends GameObject {
 
     const setupGeometry = (geometry: BufferGeometry) => {
       const wood = new THREE.MeshStandardMaterial();
+
       wood.map = woodTextures.get("color");
       wood.normalMap = woodTextures.get("nrm");
       wood.bumpMap = woodTextures.get("disp");
       wood.roughnessMap = woodTextures.get("gloss");
       wood.lightMap = woodTextures.get("refl");
 
-      table.material = [wood];
+      table.material = wood;
 
       let geom = new THREE.Geometry().fromBufferGeometry(geometry);
       table.geometry = geom;
 
+      geom.computeBoundingBox();
+      console.log(table.geometry.boundingBox);
       ResizeToFit(geom, new Vector3(width, height, depth));
 
       geom.computeFaceNormals();

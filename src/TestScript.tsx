@@ -1,6 +1,6 @@
 const testScript = `
 /******************************************************************************/
-/*                           Component declarations                           */
+/*                          Set up constants                                  */
 
 const cardNames = 
   [ 'guard'
@@ -13,11 +13,27 @@ const cardNames =
   , 'princess'
   ];
 
+const TABLE_HEIGHT = 1;
+
+
+/******************************************************************************/
+/*                          Resources                                         */
+
 const cardFronts = new resource.TextureList(
   name => \`${process.env.PUBLIC_URL}/resources/ll/\${name}.png\`,
   cardNames);
 
 const cardBack = resource.Texture.get("${process.env.PUBLIC_URL}/resources/ll/back.png");
+
+
+/******************************************************************************/
+/*                         Game components                                    */
+
+const tabletop = new game.Tabletop({
+  width: 1,
+  height: TABLE_HEIGHT,
+  depth:1
+});
 
 const deck = new game.PopulatedDeck(
   cardFronts,
@@ -34,18 +50,11 @@ const deck = new game.PopulatedDeck(
   }
 );
 
-deck.contents[0].runCallback('appear');
-deck.contents[0].position.setY(1.5);
-let rot = () => {
-  deck.contents[0].rotation.z += 0.01;
-}
-setInterval(rot, 1000/30);
+deck.position.setY(TABLE_HEIGHT);
 
-const tabletop = new game.Tabletop({
-  width: 1,
-  height: 1,
-  depth:1
-});
+
+
+
 
 // const endTurnImg = new resource.Image(
 //   "localhost:3000/resources/nextTurn.png"

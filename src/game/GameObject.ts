@@ -6,10 +6,7 @@ class GameObject extends Group {
   preconditions: any = {};
   main: Mesh | undefined;
   highlight: THREE.LineSegments | undefined;
-
-  kill() {
-    // this.scene.remove(this);=
-  }
+  highlighted: boolean = false;
 
   constructor() {
     super();
@@ -23,11 +20,12 @@ class GameObject extends Group {
     });
 
     this.on("highlight_on", () => {
-      if (!this.highlight) return;
-      this.add(this.highlight);
+      if (this.highlight) this.add(this.highlight);
+      this.highlighted = true;
     });
     this.on("highlight_off", () => {
       if (this.highlight) this.remove(this.highlight);
+      this.highlighted = false;
     });
   }
 
@@ -70,14 +68,23 @@ class GameObject extends Group {
     if (this.callbacks[cbName].length === 0) this.callbacks[cbName] = null;
   }
   runCallback(cbName: string, ...params: any[]) {
-    if (!this.callbacks[cbName]) return;
+    if (!this.callbacks[cbName]) return true;
     if (this.preconditions[cbName]) {
       const fail = this.preconditions[cbName].find((x: () => boolean) => !x());
-      if (fail) return;
+      if (fail) return false;
     }
     this.callbacks[cbName].forEach((func: (...params: any[]) => any) =>
       func(...params)
     );
+    return true;
+  }
+
+  kill() {
+    // this.scene.remove(this);=
+  }
+  update(delta: number) {
+    // Allow for custom update hooks!
+    this.runCallback("update");
   }
 }
 

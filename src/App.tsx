@@ -4,7 +4,7 @@ import { PlayArrow } from "@material-ui/icons";
 import "./App.scss";
 import testScript from "./TestScript";
 import Editor from "@monaco-editor/react";
-import GamePreview from "./GamePreview";
+import GameRenderer from "./GameRenderer";
 
 function App() {
   const [editorReady, setEditorReady] = useState(false);
@@ -49,7 +49,7 @@ function App() {
             />
           </Col>
           <Col md="6" className="right panel">
-            <GamePreview sceneCode={editorContent} />
+            <GameRenderer sceneCode={editorContent} />
           </Col>
         </Row>
       </Container>
