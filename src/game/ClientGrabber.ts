@@ -1,10 +1,13 @@
-import { Object3D, Raycaster, Vector2, Mesh } from "three";
+import { Raycaster, Vector2, Mesh } from "three";
 import { GlobalAccess } from "../GameRenderer";
 import { GameObject } from "./Game";
+import Grabber from "./Grabber";
+import Log from "./Log";
 
-class HighlightManager extends Object3D {
+class ClientGrabber extends Grabber {
   raycaster: Raycaster = new Raycaster();
   mouse: Vector2;
+  mousePressed: boolean = false;
   highlighted: GameObject | null = null;
 
   constructor(mouse: Vector2) {
@@ -13,6 +16,18 @@ class HighlightManager extends Object3D {
 
     const { scene } = (window as any) as GlobalAccess;
     scene.add(this);
+
+    window.addEventListener("mousedown", this.grab);
+    window.addEventListener("mouseup", this.release);
+  }
+
+  grab() {
+    this.mousePressed = true;
+    Log.Info("press");
+  }
+  release() {
+    this.mousePressed = false;
+    Log.Info("release");
   }
 
   update(delta: number) {
@@ -59,4 +74,4 @@ class HighlightManager extends Object3D {
   }
 }
 
-export default HighlightManager;
+export default ClientGrabber;

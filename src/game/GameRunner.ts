@@ -5,16 +5,18 @@ import THREE, {
   Scene,
   PerspectiveCamera,
 } from "three";
-import HighlightManager from "./HighlightManager";
 import { GlobalAccess } from "../GameRenderer";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GameObject } from "./Game";
 import Log from "./Log";
+import Grabber from "./Grabber";
+import ClientGrabber from "./ClientGrabber";
 
 class GameRunner {
   mouse: THREE.Vector2 = new Vector2();
   root: HTMLDivElement;
-  highlightManager: HighlightManager;
+  grabbers: Grabber[] = [];
+  clientGrabber: ClientGrabber;
   clock: THREE.Clock = new Clock();
   renderer: Renderer;
   scene: Scene;
@@ -37,7 +39,9 @@ class GameRunner {
     this.controls = new OrbitControls(this.camera, this.root);
     window.addEventListener("resize", this.resizeHandler);
     window.addEventListener("mousemove", this.mouseHandler, false);
-    this.highlightManager = new HighlightManager(this.mouse);
+
+    this.clientGrabber = new ClientGrabber(this.mouse);
+    this.grabbers.push(this.clientGrabber);
 
     Log.Initialize(this.root);
 
@@ -47,15 +51,6 @@ class GameRunner {
 
   begin() {
     requestAnimationFrame(this.update.bind(this));
-  }
-
-  handleResize() {
-    if (!this.root.parentElement) return;
-    const w = this.root.parentElement.clientWidth;
-    const h = this.root.parentElement.clientHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(w, h);
   }
 
   loadScene(sceneCode: string) {
@@ -97,6 +92,15 @@ class GameRunner {
     this.mouse.y = -(y / this.root.clientHeight) * 2 + 1;
   }
 
+  handleResize() {
+    if (!this.root.parentElement) return;
+    const w = this.root.parentElement.clientWidth;
+    const h = this.root.parentElement.clientHeight;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+  }
+
   update() {
     // Run the update step on any scene objects which implement the update interface
     const delta = this.clock.getDelta();
@@ -105,7 +109,7 @@ class GameRunner {
     });
 
     // Enable the orbit controls iff motion is supported
-    this.controls.enabled = this.highlightManager.highlighted === null;
+    this.controls.enabled = this.clientGrabber.highlighted === null;
 
     requestAnimationFrame(this.update.bind(this));
     this.render();

@@ -16,6 +16,7 @@ import { ResizeToFit } from "../GeometryTools";
 import { GlobalAccess } from "../GameRenderer";
 import Region from "./Region";
 import GameObject from "./GameObject";
+import Grabber from "./Grabber";
 
 class Deck extends GameObject {
   contents: Card[] = [];
@@ -30,6 +31,13 @@ class Deck extends GameObject {
 
     this.add(this.pile);
     this.add(this.region);
+
+    this.pile.addPre("drag_out", () => this.contents.length > 1);
+    this.pile.on("drag_out", (grabber: Grabber) => {
+      const topCard = this.contents.shift() as Card;
+      topCard.runCallback("appear");
+      grabber.attach(topCard);
+    });
   }
 }
 

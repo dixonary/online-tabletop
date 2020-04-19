@@ -1,12 +1,19 @@
 import * as THREE from "three";
 import { Group, Mesh } from "three";
+import Grabber from "./Grabber";
 
+/**
+ * The main elements of a scene.
+ * They embed a LOT of functionality including the ability to be highlighted,
+ * manipulated by Grabbers, and have events registered and called on them.
+ */
 class GameObject extends Group {
   callbacks: any = {};
   preconditions: any = {};
   main: Mesh | undefined;
   highlight: THREE.LineSegments | undefined;
   highlighted: boolean = false;
+  followAttach: any;
 
   constructor() {
     super();
@@ -26,6 +33,16 @@ class GameObject extends Group {
     this.on("highlight_off", () => {
       if (this.highlight) this.remove(this.highlight);
       this.highlighted = false;
+    });
+
+    this.addPre("attach", () => !this.followAttach);
+    this.on("attach", (grabber: Grabber) => {
+      this.followAttach = () => this.position.copy(grabber.position);
+      this.on("update", this.followAttach);
+    });
+    this.on("detach", (grabber: Grabber) => {
+      this.off("update", this.followAttach);
+      this.followAttach = null;
     });
   }
 
