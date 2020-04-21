@@ -1,101 +1,93 @@
-import * as THREE from "three";
-import { Group, Mesh } from "three";
+import { Mesh, Vector3 } from "three";
 import Log from "./Log";
+import { GlobalAccess } from "../GameRenderer";
+import { Pos3 } from "./StateStructures";
+import TrackedObject from "./TrackedObject";
+
+export type GameObjectState = {
+  position: Pos3; // The position of the object.
+  owner: string | null; // The ID of the person who is currently manipulating the object.
+  selectable: boolean;
+};
 
 /**
- * The main elements of a scene.
- * They embed a LOT of functionality including the ability to be highlighted,
- * and may have events registered and called on them.
+ * A GameObject is a physical object which appears in the scene.
+ * If you don't need physical presence then just use TrackedObject directly!
  */
-class GameObject extends Group {
-  callbacks: any = {};
-  preconditions: any = {};
-  main: Mesh | undefined;
-  highlight: THREE.LineSegments | undefined;
-  highlighted: boolean = false;
+class GameObject<State extends GameObjectState> extends TrackedObject<State> {
+  // If highlighting is enabled, the main mesh is what will be highlighted.
+  mainMesh: Mesh | undefined;
 
-  constructor() {
-    super();
+  selectable: boolean = true;
 
-    this.on("highlight_update", () => {
-      if (!this.highlight) return;
-      if (!this.main) return;
-      this.highlight.scale.copy(this.main.scale);
-      this.highlight.position.copy(this.main.position);
-      this.highlight.rotation.copy(this.main.rotation);
+  // The client (grabber) which currently controls this object.
+  owner: string | null = null;
+
+  // Whether smooth movement is enabled.
+  smoothMovement: Boolean = true;
+  smoothCoefficient: number = 1 / 6;
+  smoothPosition: Vector3 | null = null;
+
+  constructor(initialState: State) {
+    super(initialState);
+
+    this.state.position.addHook(([{ x, y, z }]) => {
+      if (this.smoothMovement) {
+        if (this.smoothPosition) this.smoothPosition.set(x, y, z);
+        else this.smoothPosition = new Vector3(x, y, z);
+      } else {
+        this.position.set(x, y, z);
+      }
+    });
+    this.state.owner.addHook(([newOwner]) => {
+      this.owner = newOwner;
+    });
+    this.state.selectable.addHook(([newSelectable]) => {
+      this.selectable = newSelectable;
     });
 
-    this.on("highlight_on", () => {
-      if (this.highlight) this.add(this.highlight);
-      this.highlighted = true;
-    });
-    this.on("highlight_off", () => {
-      if (this.highlight) this.remove(this.highlight);
-      this.highlighted = false;
-    });
-  }
-
-  /**
-   * Call this to set the "main" mesh.
-   * The main mesh will be highlighted when highlighting is enabled.
-   */
-  setMain(mesh: Mesh) {
-    this.main = mesh;
-    if (this.highlight) {
-      this.remove(this.highlight);
-    }
-    this.highlight = new THREE.LineSegments(
-      new THREE.EdgesGeometry(mesh.geometry),
-      new THREE.LineBasicMaterial({ color: "#000000" })
-    );
-  }
-
-  /* Callback precondition management */
-  addPre(cbName: string, pre: () => boolean) {
-    if (!this.preconditions[cbName]) this.preconditions[cbName] = [];
-
-    this.preconditions[cbName].push(pre);
-  }
-  removePre(cbName: string, pre: () => boolean) {
-    if (!this.preconditions[cbName]) return;
-    this.preconditions[cbName].remove(pre);
-    if (this.preconditions[cbName].length === 0)
-      this.preconditions[cbName] = null;
-  }
-
-  /* Callback management */
-  on(cbName: string, cb: any) {
-    if (!this.callbacks[cbName]) this.callbacks[cbName] = [];
-    this.callbacks[cbName].push(cb);
-  }
-  off(cbName: string, cb: any) {
-    if (!this.callbacks[cbName]) return;
-
-    this.callbacks[cbName] = this.callbacks[cbName].filter(
-      (x: any) => x !== cb
-    );
-    if (this.callbacks[cbName].length === 0) this.callbacks[cbName] = null;
-  }
-  runCallback(cbName: string, ...params: any[]) {
-    if (!this.callbacks[cbName] && !this.preconditions[cbName]) return true;
-
-    if (this.preconditions[cbName]) {
-      const fail = this.preconditions[cbName].find((x: () => boolean) => !x());
-      if (fail) return false;
-    }
-    Log.Info(`${this.constructor.name}::${cbName}`);
-    this.callbacks[cbName].forEach((func: (...params: any[]) => any) =>
-      func(...params)
-    );
-    return true;
+    const global = (window as any) as GlobalAccess;
+    global.scene.add(this);
   }
 
   kill() {
-    // this.scene.remove(this);=
+    const global = (window as any) as GlobalAccess;
+    global.scene.remove(this);
   }
+
+  add(...os: any[]) {
+    os.forEach((o) => {
+      if (o instanceof GameObject) {
+        Log.Warn(
+          "Do NOT add GameObjects as children of other GameObjects." +
+            " It will be harder to track their state," +
+            " and positions will be wrong when dragging.\n" +
+            `${this.constructor.name} -> ${o.constructor.name}`
+        );
+      }
+    });
+    super.add(...os);
+    return this;
+  }
+
   update(delta: number) {
+    // Do smooth positional update
+    if (this.smoothPosition) {
+      const diff = this.smoothPosition.clone().sub(this.position);
+      const dist = diff.length();
+
+      this.position.addScaledVector(diff, this.smoothCoefficient);
+
+      // Arbitrarily set the snapping distance to 1cm
+      if (dist < 0.001) {
+        // Good enough for government work
+        this.position.copy(this.smoothPosition);
+        this.smoothPosition = null;
+      }
+    }
+
     // Allow for custom update hooks!
-    this.runCallback("update");
+    this.event("update");
   }
 }
 

@@ -41,7 +41,7 @@ main {
 
 .log {
   position: absolute;
-  width: 100%;
+  width: calc(100% - 10px);
   height: 100%;
   top: 0;
   left: 0;
@@ -59,6 +59,10 @@ main {
 
   .info {
     background-color: rgba(0, 0, 0, 0.3);
+    color: white;
+  }
+  .success {
+    background-color: rgba(0, 255, 0, 0.3);
     color: white;
   }
 

@@ -4,7 +4,8 @@ import { PlayArrow } from "@material-ui/icons";
 import "./App.scss";
 import testScript from "./TestScript";
 import Editor from "@monaco-editor/react";
-import GameRenderer from "./GameRenderer";
+import GameRenderer, { Mode } from "./GameRenderer";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
   const [editorReady, setEditorReady] = useState(false);
@@ -24,36 +25,47 @@ function App() {
   }, [getter, setEditorContent]);
 
   return (
-    <>
-      <Navbar variant="dark" bg="dark">
-        <Navbar.Brand>TTOnline</Navbar.Brand>
-        <Navbar.Collapse className="justify-content-end">
-          <Button as="a" disabled={!editorReady} onClick={updatePreview}>
-            <PlayArrow />
-          </Button>
-        </Navbar.Collapse>
-      </Navbar>
+    <Router>
+      <Route exact path="/">
+        <Navbar variant="dark" bg="dark">
+          <Navbar.Brand>TTOnline</Navbar.Brand>
+          <Navbar.Collapse className="justify-content-end">
+            <Button as="a" disabled={!editorReady} onClick={updatePreview}>
+              <PlayArrow />
+            </Button>
+          </Navbar.Collapse>
+        </Navbar>
+      </Route>
+
       <Container fluid as="main">
         <Row className="column-container">
-          <Col md="6" className="left panel">
-            <Editor
-              value={testScript}
-              language="javascript"
-              theme="dark"
-              options={{
-                fontSize: 12,
-                minimap: { enabled: false },
-                rulers: [80],
-              }}
-              editorDidMount={handleMount}
-            />
-          </Col>
-          <Col md="6" className="right panel">
-            <GameRenderer sceneCode={editorContent} />
-          </Col>
+          <Switch>
+            <Route exact path="/">
+              <Col md="6" className="left panel">
+                <Editor
+                  value={testScript}
+                  language="javascript"
+                  theme="dark"
+                  options={{
+                    fontSize: 12,
+                    minimap: { enabled: false },
+                    rulers: [80],
+                  }}
+                  editorDidMount={handleMount}
+                />
+              </Col>
+              <Col md="6" className="right panel">
+                <GameRenderer mode={Mode.HOST} sceneCode={editorContent} />
+              </Col>
+            </Route>
+
+            <Route path="/:roomCode">
+              <GameRenderer mode={Mode.JOIN} />
+            </Route>
+          </Switch>
         </Row>
       </Container>
-    </>
+    </Router>
   );
 }
 

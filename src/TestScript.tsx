@@ -35,7 +35,7 @@ const tabletop = new game.Tabletop({
   depth:1
 });
 
-const deck = new game.PopulatedDeck(
+const deck = game.Deck.Populated(
   cardFronts,
   cardBack,
   {
@@ -51,10 +51,6 @@ const deck = new game.PopulatedDeck(
 );
 
 deck.position.setY(TABLE_HEIGHT);
-
-
-
-
 
 // const endTurnImg = new resource.Image(
 //   "localhost:3000/resources/nextTurn.png"
@@ -178,8 +174,6 @@ deck.position.setY(TABLE_HEIGHT);
 //   discard,
 //   endTurnButton 
 // };
-
-world = { tabletop, deck };
 
 const minimumPlayers = 2;
 const maximumPlayers = 4;

@@ -5,6 +5,7 @@ export enum LogLevel {
   INFO,
   WARN,
   ERROR,
+  SUCCESS,
 }
 
 class Log extends Object3D {
@@ -20,14 +21,6 @@ class Log extends Object3D {
     scene.add(Log.instance);
   }
 
-  static Error(e: any) {
-    Log.instance.error(e);
-  }
-
-  static Info(e: any) {
-    Log.instance.info(e);
-  }
-
   constructor(root: HTMLDivElement) {
     super();
     this.root = document.createElement("div") as HTMLDivElement;
@@ -40,13 +33,15 @@ class Log extends Object3D {
     this.messages.forEach((m) => m.update());
   }
 
-  error(e: any) {
-    this.log(e, LogLevel.ERROR);
-  }
+  static Info = (e: any) => Log.instance.info(e, LogLevel.INFO);
+  static Warn = (e: any) => Log.instance.warn(e, LogLevel.WARN);
+  static Error = (e: any) => Log.instance.error(e, LogLevel.ERROR);
+  static Success = (e: any) => Log.instance.success(e, LogLevel.SUCCESS);
 
-  info(e: any) {
-    this.log(e, LogLevel.INFO);
-  }
+  info = this.log.bind(this);
+  error = this.log.bind(this);
+  warn = this.log.bind(this);
+  success = this.log.bind(this);
 
   log(e: any, level: LogLevel) {
     let message = new Message(this, e, level);
@@ -54,7 +49,7 @@ class Log extends Object3D {
 
     const h = message.elem.clientHeight;
     // start it at the bottom, now we're here
-    message.position = -h;
+    message.position = (this.messages[0]?.position ?? 0) - h;
     this.messages.forEach((m) => m.adjust(this.gap + h));
     message.adjust(this.gap);
     this.messages.unshift(message);
@@ -95,6 +90,9 @@ class Message {
         break;
       case LogLevel.ERROR:
         elem.classList.add("error");
+        break;
+      case LogLevel.SUCCESS:
+        elem.classList.add("success");
         break;
     }
 

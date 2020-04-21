@@ -1,5 +1,6 @@
 import Tabletop from "./Tabletop";
-import { Deck, Card, PopulatedDeck } from "./Deck";
+import { Deck, Card } from "./Deck";
 import GameObject from "./GameObject";
+import { StateController } from "./StateMachine";
 
-export { Deck, PopulatedDeck, Card, Tabletop, GameObject };
+export { Deck, Card, Tabletop, GameObject, StateController };

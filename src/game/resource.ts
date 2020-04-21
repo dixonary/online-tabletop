@@ -2,6 +2,7 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { TextureLoader } from "three/src/loaders/TextureLoader";
 import Log from "./Log";
+import { EventHandler, Callback } from "./EventHandler";
 
 const cache = {
   STL: new Map<string, STL>(),
@@ -12,7 +13,7 @@ const cache = {
 class Resource {
   loaded: boolean = false;
   value: any = undefined;
-  callbacks: any = {};
+  eventHandler: EventHandler = new EventHandler();
   url: string;
 
   constructor(url: string, confirm?: boolean) {
@@ -29,31 +30,21 @@ class Resource {
   onLoad(value: any) {
     this.loaded = true;
     this.value = value;
-    this.runCallback("load", value);
+    this.event("load", value);
   }
 
-  /* Callback management */
-  on(cbName: string, cb: any) {
-    if (!this.callbacks[cbName]) this.callbacks[cbName] = [];
-    this.callbacks[cbName].push(cb);
-  }
-  off(cbName: string, cb: any) {
-    if (!this.callbacks[cbName]) return;
-
-    this.callbacks[cbName].remove(cb);
-    if (this.callbacks[cbName] === []) this.callbacks[cbName] = [];
-  }
-  runCallback(cbName: string, ...params: any[]) {
-    if (!this.callbacks[cbName]) return;
-    this.callbacks[cbName].forEach((func: (...params: any[]) => any) =>
-      func(...params)
-    );
-  }
+  /* Wrap the EventHandler functions */
+  on = (eventName: string, callback: Callback<any>) =>
+    this.eventHandler.on(eventName, callback);
+  once = (eventName: string, callback: Callback<any>) =>
+    this.eventHandler.once(eventName, callback);
+  off = (eventName: string, callback?: Callback<any>) =>
+    this.eventHandler.off(eventName, callback);
+  event = (eventName: string, ...vars: any[]) =>
+    this.eventHandler.event(eventName, ...vars);
 
   loadingError(err: any) {
-    Log.Error(
-      "Couldn't load the following resource:\n" + this.url + "\n"
-    );
+    Log.Error("Couldn't load the following resource:\n" + this.url + "\n");
     this.decache();
   }
 

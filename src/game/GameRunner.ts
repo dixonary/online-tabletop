@@ -1,33 +1,45 @@
-import THREE, {
-  Renderer,
+import {
   Vector2,
   Clock,
   Scene,
   PerspectiveCamera,
+  WebGLRenderer,
+  Color,
 } from "three";
 import { GlobalAccess } from "../GameRenderer";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { GameObject } from "./Game";
 import Log from "./Log";
-import Grabber from "./Grabber";
-import ClientGrabber from "./ClientGrabber";
+import GrabberManager from "./grabber/GrabberManager";
+import NetworkClient from "./NetworkClient";
+import { StateController } from "./StateMachine";
+import IDManager from "./IDManager";
+import Input from "./Input";
+import Grabber from "./grabber/Grabber";
+import TrackedObject from "./TrackedObject";
 
 class GameRunner {
   mouse: THREE.Vector2 = new Vector2();
   root: HTMLDivElement;
-  grabbers: Grabber[] = [];
-  clientGrabber: ClientGrabber;
   clock: THREE.Clock = new Clock();
-  renderer: Renderer;
+  renderer: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
   controls: OrbitControls;
+  stateController: StateController = new StateController();
+  network: NetworkClient = new NetworkClient();
+  sceneCode: string = "";
 
-  // We define these so that they can be disposed of
-  private mouseHandler = this.handleMouseMove.bind(this);
+  outlinePass: OutlinePass;
+  composer: EffectComposer;
+
+  // We define this so that it can be disposed of
   private resizeHandler = this.handleResize.bind(this);
 
-  constructor({ root }: { root: HTMLDivElement }) {
+  constructor(root: HTMLDivElement) {
     this.root = root;
 
     const global = (window as any) as GlobalAccess;
@@ -38,12 +50,30 @@ class GameRunner {
 
     this.controls = new OrbitControls(this.camera, this.root);
     window.addEventListener("resize", this.resizeHandler);
-    window.addEventListener("mousemove", this.mouseHandler, false);
 
-    this.clientGrabber = new ClientGrabber(this.mouse);
-    this.grabbers.push(this.clientGrabber);
+    // Set up the effect composer
+    this.composer = new EffectComposer(this.renderer);
 
+    var renderPass = new RenderPass(this.scene, this.camera);
+    this.composer.addPass(renderPass);
+
+    this.outlinePass = new OutlinePass(
+      new Vector2(window.innerWidth, window.innerHeight),
+      this.scene,
+      this.camera
+    );
+    this.outlinePass.visibleEdgeColor = new Color(0xffffff);
+    this.outlinePass.edgeStrength = 3;
+    this.outlinePass.edgeGlow = 0;
+    this.outlinePass.edgeThickness = 1;
+
+    this.composer.addPass(this.outlinePass);
+    Grabber.outlinePass = this.outlinePass;
+
+    // Initialise global singletons
     Log.Initialize(this.root);
+    NetworkClient.Initialize();
+    Input.Initialize(this.root);
 
     this.handleResize();
     this.begin();
@@ -53,22 +83,33 @@ class GameRunner {
     requestAnimationFrame(this.update.bind(this));
   }
 
-  loadScene(sceneCode: string) {
+  hostRoom(sceneCode: string) {
+    Log.Info("Connecting...");
+    NetworkClient.Host(sceneCode, this);
+  }
+
+  joinRoom(roomCode: string) {
+    Log.Info("Connecting...");
+    NetworkClient.Join(roomCode, this);
+  }
+
+  loadScene() {
+    // Unload first just in case
+    this.unloadScene();
+
+    const sceneCode = this.sceneCode;
     try {
       // eslint-disable-next-line
       eval.call(window, sceneCode);
-
-      // calculate objects intersecting the picking ray
-      const { world } = (window as any) as InterpreterResults;
-
-      if (world) {
-        Object.entries(world).forEach(([name, gameObject]: [string, any]) => {
-          this.scene.add(gameObject);
-        });
-      }
+      this.additionalGameSetup();
     } catch (e) {
       Log.Error(e);
+      console.error(e);
     }
+  }
+
+  additionalGameSetup() {
+    new GrabberManager(NetworkClient.players.map((p) => p.id));
   }
 
   unloadScene() {
@@ -76,22 +117,16 @@ class GameRunner {
     // Currently it is assumed that the interpreter will
     // only add GameObjects to the scene, so this should be complete.
     this.scene.children
-      .filter((x) => x instanceof GameObject)
+      .filter((x) => x instanceof TrackedObject)
       .forEach((go) => {
         console.log("Unloading " + go.constructor.name);
         this.scene.remove(go);
       });
-  }
 
-  handleMouseMove(event: MouseEvent) {
-    if (!this.root || !this.mouse) return;
-    const bound = this.root.getBoundingClientRect();
-    const x = event.clientX - bound.left;
-    const y = event.clientY - bound.top;
-    this.mouse.x = (x / this.root.clientWidth) * 2 - 1;
-    this.mouse.y = -(y / this.root.clientHeight) * 2 + 1;
+    // Set the global state controls back to their initial values
+    StateController.Clear();
+    IDManager.reset();
   }
-
   handleResize() {
     if (!this.root.parentElement) return;
     const w = this.root.parentElement.clientWidth;
@@ -99,6 +134,7 @@ class GameRunner {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
+    this.composer.setSize(w, h);
   }
 
   update() {
@@ -108,21 +144,16 @@ class GameRunner {
       if (o.update) o.update(delta);
     });
 
-    // Enable the orbit controls iff motion is supported
-    this.controls.enabled = this.clientGrabber.highlighted === null;
-
     requestAnimationFrame(this.update.bind(this));
     this.render();
   }
 
   render() {
-    this.renderer.render(this.scene, this.camera);
+    this.composer.render();
   }
 
   dispose() {
     console.log("Disposing of the scene");
-    window.removeEventListener("resize", this.resizeHandler);
-    window.removeEventListener("mousemove", this.mouseHandler);
   }
 }
 

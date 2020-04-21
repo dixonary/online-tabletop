@@ -1,5 +1,5 @@
-import GameObject from "./GameObject";
+import GameObject, { GameObjectState } from "./GameObject";
 
-class Region extends GameObject {}
+class Region extends GameObject<GameObjectState> {}
 
 export default Region;

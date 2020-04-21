@@ -1,13 +1,26 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
-// import fireplace from "./fireplace.jpg";
 import * as game from "./game/Game";
 import * as resource from "./game/resource";
 import { AutoUV } from "./GeometryTools";
 import GameRunner from "./game/GameRunner";
+import { useParams } from "react-router-dom";
 
-const GameRenderer = ({ sceneCode }: { sceneCode: string }) => {
+export enum Mode {
+  HOST,
+  JOIN,
+}
+
+const GameRenderer = ({
+  mode,
+  sceneCode,
+}: {
+  mode: Mode;
+  sceneCode?: string;
+}) => {
   const [initialized, setInitialized] = useState<boolean>(false);
+
+  const { roomCode } = useParams();
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -118,13 +131,28 @@ const GameRenderer = ({ sceneCode }: { sceneCode: string }) => {
 
   if (!initialized) return <></>;
 
-  return <PreviewManager sceneCode={sceneCode}></PreviewManager>;
+  return (
+    <PreviewManager
+      mode={mode}
+      roomCode={roomCode}
+      sceneCode={sceneCode}
+    ></PreviewManager>
+  );
 };
 
-const PreviewManager = ({ sceneCode }: { sceneCode: string }) => {
+const PreviewManager = ({
+  mode,
+  roomCode,
+  sceneCode,
+}: {
+  mode: Mode;
+  roomCode?: string;
+  sceneCode?: string;
+}) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const runnerRef = useRef<GameRunner | null>(null);
 
+  // Use this effect exactly once to initialise the runner
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -133,7 +161,7 @@ const PreviewManager = ({ sceneCode }: { sceneCode: string }) => {
     root.appendChild(renderer.domElement);
 
     if (!runnerRef.current) {
-      const runner = new GameRunner({ root });
+      const runner = new GameRunner(root);
       runnerRef.current = runner;
     }
 
@@ -144,16 +172,18 @@ const PreviewManager = ({ sceneCode }: { sceneCode: string }) => {
     };
   }, []);
 
+  // When the scene changes, run this one
   useEffect(() => {
     const runner = runnerRef.current;
     if (runner) {
-      runner.loadScene(sceneCode);
+      if (mode === Mode.JOIN) runner.joinRoom(roomCode!);
+      else if (mode === Mode.HOST) runner.hostRoom(sceneCode!);
     }
     return () => {
       const runner = runnerRef.current;
       if (runner) runner.unloadScene();
     };
-  }, [sceneCode, runnerRef]);
+  }, [roomCode, sceneCode, mode, runnerRef]);
 
   return <div ref={rootRef}></div>;
 };
@@ -165,7 +195,7 @@ export type GlobalAccess = {
   game: any;
   camera: THREE.PerspectiveCamera;
   resource: any;
-  renderer: THREE.Renderer;
+  renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
 };
 
