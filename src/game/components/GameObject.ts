@@ -1,4 +1,4 @@
-import { Mesh, Vector3 } from "three";
+import { Mesh, Vector3, Quaternion } from "three";
 import Log from "../Log";
 import { Pos3 } from "../StateStructures";
 import TrackedObject from "../TrackedObject";
@@ -22,9 +22,12 @@ class GameObject<State extends GameObjectState> extends TrackedObject<State> {
   owner: string | null = null;
 
   // Whether smooth movement is enabled.
-  smoothMovement: Boolean = true;
-  smoothCoefficient: number = 1 / 6;
+  smoothMovement: boolean = true;
+  smoothCoefficient: number = 1 / 3;
   smoothPosition: Vector3 | null = null;
+
+  smoothRotation: boolean = true;
+  smoothQuaternion: Quaternion | null = null;
 
   constructor(initialState: State) {
     super(initialState);
@@ -68,17 +71,26 @@ class GameObject<State extends GameObjectState> extends TrackedObject<State> {
     super.update(delta);
 
     // Do smooth positional update
-    if (this.smoothPosition) {
-      const diff = this.smoothPosition.clone().sub(this.position);
-      const dist = diff.length();
-
-      this.position.addScaledVector(diff, this.smoothCoefficient);
+    if (this.smoothPosition && this.smoothMovement) {
+      const dist = this.smoothPosition.distanceTo(this.position);
 
       // Arbitrarily set the snapping distance to 1cm
       if (dist < 0.001) {
         // Good enough for government work
         this.position.copy(this.smoothPosition);
         this.smoothPosition = null;
+      } else {
+        this.position.lerp(this.smoothPosition, this.smoothCoefficient);
+      }
+    }
+
+    if (this.smoothQuaternion && this.smoothRotation) {
+      // Arbitrarily set the snapping dot product to 0.95
+      if (this.quaternion.dot(this.smoothQuaternion) > 0.99) {
+        this.quaternion.copy(this.smoothQuaternion);
+        this.smoothQuaternion = null;
+      } else {
+        this.quaternion.slerp(this.smoothQuaternion, this.smoothCoefficient);
       }
     }
   }

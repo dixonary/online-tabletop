@@ -11,6 +11,10 @@ class Authority {
     NetworkClient.ReceiveAuthoritativeCall = Authority.Receive;
   }
 
+  /**
+   * We are the authority, and the network has just handed us an authoritative
+   * call to make.
+   */
   static Receive<K>(objectId: string, functionName: string, params: K) {
     Log.Info(`${objectId} :: ! ${functionName}(${params ?? ""})`);
     const obj = StateManager.GetObject(objectId);
@@ -24,6 +28,9 @@ class Authority {
     (obj as any)[functionName](params);
   }
 
+  /**
+   * Send a request to the host that they make an authoritative call.
+   */
   static Do<K>(object: TrackedObject<any>, func: (data: K) => any, data?: K) {
     NetworkClient.SendAuthoritativeCall(object.identifier, func.name, data);
   }

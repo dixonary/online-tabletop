@@ -46,10 +46,10 @@ const tabletop = new component.Tabletop({
   depth:1
 });
 
-const deck = new component.PopulatedDeck (
+const deck = new component.PopulatedDeck ({
   cardFronts,
   cardBack,
-  {
+  distribution: {
     guard: 5,
     priest: 2,
     baron: 2,
@@ -58,8 +58,9 @@ const deck = new component.PopulatedDeck (
     king: 1,
     countess:1,
     princess:1
-  }
-);
+  },
+  faceDown:true
+});
 
 deck.position.setY(TABLE_HEIGHT);
 

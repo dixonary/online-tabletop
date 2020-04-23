@@ -24,28 +24,11 @@ class TrackedObject<State extends {}> extends BasicObject {
 
     // We have to cast this. The StateMachine sets the hooked values
     // to itself but this cannot be adequately typechecked in TS (yet!)
-    this.state = new ObjectState(
-      this.constructor.name,
-      id,
-      initialState,
-      this
-    ) as Stateful<State>;
+    this.state = new ObjectState(id, initialState, this) as Stateful<State>;
 
     StateManager.Register(id, this.state);
 
     console.log(this.constructor.name, this.identifier);
-  }
-
-  /**
-   * Set the state of one or more variables locally.
-   * The changes will be propagated through the state machine and state
-   * update hooks will be called.
-   * The network will be informed!
-   * @param newState The state variables to update.
-   */
-  setState(newState: any) {
-    this.state.updateState(newState, true);
-    NetworkClient.SendStateUpdate(this.identifier, newState);
   }
 
   /**

@@ -36,7 +36,7 @@ class PlayerManager extends TrackedObject<PlayerManagerData> {
     clients.forEach((c) => {
       playerMap[c.id] = { clientId: c.id };
     });
-    PlayerManager.instance.state.players.set(playerMap, true);
+    PlayerManager.instance.state.players.set(playerMap, false);
   }
 
   static GetPlayers() {

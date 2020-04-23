@@ -16,8 +16,11 @@ class Input extends BasicObject {
     justReleased: false,
   };
 
+  private pressedLast: boolean = false;
+
   private root: HTMLElement;
   private static mousePressedIntraFrame: boolean = false;
+  private static mouseReleasedIntraFrame: boolean = false;
   private static instance: Input;
 
   constructor(root: HTMLElement) {
@@ -56,10 +59,10 @@ class Input extends BasicObject {
   }
 
   handleMouseDown(event: MouseEvent) {
-    Input.mousePressedIntraFrame = true;
+    Input.mouse.pressed = true;
   }
   handleMouseUp(event: MouseEvent) {
-    Input.mousePressedIntraFrame = false;
+    Input.mouse.pressed = false;
   }
 
   update(delta: number) {
@@ -67,13 +70,10 @@ class Input extends BasicObject {
 
     const mouse = Input.mouse;
 
-    if (Input.mousePressedIntraFrame) {
-      mouse.justPressed = !mouse.pressed;
-      mouse.pressed = true;
-    } else {
-      mouse.justReleased = mouse.pressed;
-      mouse.pressed = false;
-    }
+    mouse.justPressed = Input.mouse.pressed && !this.pressedLast;
+    mouse.justReleased = !Input.mouse.pressed && this.pressedLast;
+
+    this.pressedLast = Input.mouse.pressed;
   }
 }
 

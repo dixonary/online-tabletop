@@ -9,13 +9,18 @@ import {
   Vector2,
   MeshBasicMaterial,
   Material,
+  Quaternion,
 } from "three";
 import { Texture } from "../resource";
 import * as resource from "../resource";
 import { ResizeToFit } from "../GeometryTools";
 import { Pos3 } from "../StateStructures";
 
-export type CardState = AbstractCardState & GameObjectState;
+export type CardState = AbstractCardState & PhysicalCardState;
+
+export type PhysicalCardState = GameObjectState & {
+  faceDown: boolean;
+};
 
 export type AbstractCardState = {
   backTexture: string;
@@ -30,20 +35,41 @@ class Card extends GameObject<CardState> {
   entity: Mesh;
   static thickness: number = 0.001;
 
-  constructor(
-    frontTexture: string,
-    backTexture: string,
-    name: string,
-    initialPos?: Pos3
-  ) {
+  constructor({
+    frontTexture,
+    backTexture,
+    name,
+    faceDown,
+    initialPos,
+  }: {
+    frontTexture: string;
+    backTexture: string;
+    name: string;
+    faceDown: boolean;
+    initialPos: Pos3;
+  }) {
     super({
       position: initialPos ?? { x: 0, y: 0, z: 0 },
       owner: null,
-      frontTexture: frontTexture,
-      backTexture: backTexture,
+      frontTexture,
+      backTexture,
       name,
       selectable: true,
       grabbable: true,
+      faceDown,
+    });
+
+    this.quaternion.setFromAxisAngle(
+      new Vector3(0, 0, 1),
+      faceDown ? 0 : Math.PI
+    );
+
+    this.state.faceDown.addHook((newFace: boolean) => {
+      this.smoothQuaternion = new Quaternion();
+      this.smoothQuaternion.setFromAxisAngle(
+        new Vector3(0, 0, 1),
+        newFace ? 0 : Math.PI
+      );
     });
 
     this.entity = this.makeVisual();

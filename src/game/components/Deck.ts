@@ -10,6 +10,7 @@ import {
   Box3,
   Vector2,
   Material,
+  Quaternion,
 } from "three";
 import { ResizeToFit } from "../GeometryTools";
 import GameObject, { GameObjectState } from "./GameObject";
@@ -17,9 +18,11 @@ import StateManager from "../managers/StateManager";
 import Grabber from "./Grabber";
 import Card, { AbstractCardState } from "./Card";
 import Authority from "../managers/Authority";
+import Log from "../Log";
 
 type DeckState = GameObjectState & {
   cards: AbstractCardState[];
+  faceDown: boolean;
 };
 
 /**
@@ -28,13 +31,20 @@ type DeckState = GameObjectState & {
 class Deck extends GameObject<DeckState> {
   pile: Mesh;
 
-  constructor(cards: AbstractCardState[]) {
+  constructor({
+    cards,
+    faceDown,
+  }: {
+    cards: AbstractCardState[];
+    faceDown: boolean;
+  }) {
     super({
       owner: null,
       selectable: true,
       grabbable: false,
       position: { x: 0, y: 0, z: 0 },
       cards,
+      faceDown,
     });
 
     this.pile = this.makePile();
@@ -62,18 +72,21 @@ class Deck extends GameObject<DeckState> {
     if (cards.length === 0) return;
 
     const topCard = cards.shift()!;
-    this.setState({ cards });
 
-    const card = Card.Create(
-      topCard.frontTexture,
-      topCard.backTexture,
-      topCard.name,
-      {
+    console.log(this.state.cards);
+    this.state.cards.set(cards);
+
+    const card = Card.Create({
+      frontTexture: topCard.frontTexture,
+      backTexture: topCard.backTexture,
+      name: topCard.name,
+      faceDown: this.state.faceDown.get(),
+      initialPos: {
         x: this.position.x,
         y: this.position.y + this.scale.y * Card.thickness,
         z: this.position.z,
-      }
-    );
+      },
+    });
 
     grabber.grab(card.identifier);
   }
@@ -154,6 +167,8 @@ class Deck extends GameObject<DeckState> {
    * @param cards The new abstract state of the pile.
    */
   updatePileVisual(cards: AbstractCardState[]) {
+    console.log(cards.length);
+
     if (cards.length > 0) {
       this.pile.visible = true;
       this.pile.scale.y = cards.length;
@@ -162,6 +177,7 @@ class Deck extends GameObject<DeckState> {
       const bottomCard = cards[cards.length - 1];
 
       const mats = this.pile.material as MeshBasicMaterial[];
+
       mats[1].map = Texture.get(topCard.backTexture).value;
       mats[2].map = Texture.get(bottomCard.frontTexture).value;
     } else {
@@ -178,7 +194,17 @@ class Deck extends GameObject<DeckState> {
 }
 
 class PopulatedDeck extends Deck {
-  constructor(cardFronts: TextureList, cardBack: Texture, distribution?: any) {
+  constructor({
+    cardFronts,
+    cardBack,
+    distribution,
+    faceDown,
+  }: {
+    cardFronts: TextureList;
+    cardBack: Texture;
+    faceDown: boolean;
+    distribution?: any;
+  }) {
     const cards: AbstractCardState[] = [];
     Object.entries(distribution).forEach(([name, amt]: [string, any]) => {
       for (let i = 0; i < amt; i++) {
@@ -190,7 +216,7 @@ class PopulatedDeck extends Deck {
       }
     });
     Shuffle(cards);
-    super(cards);
+    super({ cards, faceDown });
   }
 }
 

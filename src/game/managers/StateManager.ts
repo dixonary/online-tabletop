@@ -1,6 +1,7 @@
 import TrackedObject from "../TrackedObject";
 import { EventHandler, Callback } from "../EventHandler";
 import Log from "../Log";
+import NetworkClient from "./NetworkClient";
 
 export type Hookable<K> = {
   [k in keyof K]: Hooked<K[k]>;
@@ -12,18 +13,35 @@ export type Stateful<K> = ObjectState<K> & Hookable<K>;
  */
 class Hooked<Value> {
   private value: Value;
+  private propertyName: string;
   private eventHandler: EventHandler = new EventHandler();
-  constructor(initialValue: Value) {
+  private object: TrackedObject<any>;
+
+  constructor(
+    object: TrackedObject<any>,
+    propertyName: string,
+    initialValue: Value
+  ) {
+    this.propertyName = propertyName;
     this.value = initialValue;
+    this.object = object;
   }
 
   /**
    * Update a stateful value.
    * @param val The new value.
-   * @param propagate Whether to send an update event.
+   * @param propagate Whether to tell the network about the update.
    */
-  set(val: Value, propagate: boolean) {
-    if (propagate) this.eventHandler.event("value", val);
+  set(val: Value, propagate: boolean = true) {
+    this.eventHandler.event("value", val);
+
+    if (propagate)
+      NetworkClient.SendStateUpdate(
+        this.object.identifier,
+        this.propertyName,
+        val
+      );
+
     this.value = val;
   }
 
@@ -51,20 +69,15 @@ class Hooked<Value> {
 
 class ObjectState<K> {
   obj: TrackedObject<K>;
-  typeName: string;
+  identifier: string;
 
-  constructor(
-    typeName: string,
-    id: string,
-    initialState: any,
-    obj: TrackedObject<K>
-  ) {
+  constructor(id: string, initialState: any, obj: TrackedObject<K>) {
     Object.entries(initialState).forEach(([k, v]: [string, any]) => {
-      (this as any)[k] = new Hooked(v);
+      (this as any)[k] = new Hooked(obj, k, v);
     });
-    this.typeName = typeName;
     this.obj = obj;
     this.obj.identifier = id;
+    this.identifier = id;
   }
 
   /**
@@ -72,10 +85,8 @@ class ObjectState<K> {
    * @param newState The new state.
    * @param propagate Propagate the changes to the controlling object.
    */
-  updateState(newState: Partial<K>, propagate: boolean) {
-    Object.entries(newState).forEach(([k, v]: [string, any]) => {
-      ((this as any)[k] as Hooked<any>).set(v, propagate);
-    });
+  updateState<K>(property: string, newState: K) {
+    ((this as any)[property] as Hooked<K>).set(newState, false);
   }
 
   destroy() {
@@ -92,8 +103,8 @@ class StateManager {
    * @param newState The new state.
    * @param propagate Propagate the changes to the controlling object.
    */
-  static UpdateState(id: string, newState: any, propagate: boolean = true) {
-    StateManager.states.get(id)?.updateState(newState, propagate);
+  static UpdateState(id: string, property: string, newState: any) {
+    StateManager.states.get(id)?.updateState(property, newState);
   }
 
   /**
@@ -103,7 +114,6 @@ class StateManager {
    * @param initialState The initial state it should be given.
    */
   static Create(className: string, ...params: any[]) {
-    Log.Info(JSON.stringify(params));
     // TODO upgrade this so it can create anything, not just things that are "components"
     new (window as any).component[className](...params);
   }

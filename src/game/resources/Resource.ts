@@ -32,7 +32,6 @@ class Resource {
 
   loadingError(err: any) {
     Log.Error("Couldn't load the following resource:\n" + this.url + "\n");
-    console.log(err);
     this.decache();
   }
 

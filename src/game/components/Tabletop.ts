@@ -38,7 +38,7 @@ class Tabletop extends GameObject<TabletopState> {
       this.scale.set(width, height, depth);
     });
 
-    this.setState({ selectable: false });
+    this.state.selectable.set(false);
   }
 
   initialiseMesh() {

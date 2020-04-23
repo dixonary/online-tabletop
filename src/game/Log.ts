@@ -32,15 +32,10 @@ class Log extends Object3D {
     this.messages.forEach((m) => m.update());
   }
 
-  static Info = (e: any) => Log.instance.info(e, LogLevel.INFO);
-  static Warn = (e: any) => Log.instance.warn(e, LogLevel.WARN);
-  static Error = (e: any) => Log.instance.error(e, LogLevel.ERROR);
-  static Success = (e: any) => Log.instance.success(e, LogLevel.SUCCESS);
-
-  info = this.log.bind(this);
-  error = this.log.bind(this);
-  warn = this.log.bind(this);
-  success = this.log.bind(this);
+  static Info = (e: any) => Log.instance.log(e, LogLevel.INFO);
+  static Warn = (e: any) => Log.instance.log(e, LogLevel.WARN);
+  static Error = (e: any) => Log.instance.log(e, LogLevel.ERROR);
+  static Success = (e: any) => Log.instance.log(e, LogLevel.SUCCESS);
 
   log(e: any, level: LogLevel) {
     let message = new Message(this, e, level);
@@ -52,6 +47,8 @@ class Log extends Object3D {
     this.messages.forEach((m) => m.adjust(this.gap + h));
     message.adjust(this.gap);
     this.messages.unshift(message);
+
+    console.log(e);
   }
 
   killMessage(child: Message) {

@@ -53,8 +53,8 @@ class Grabber extends GameObject<GrabberState & GameObjectState> {
     if (obj.state.owner.get() !== null) return;
     if (!obj.state.grabbable.get()) return;
 
-    this.setState({ grabbedObject: objId });
-    obj.setState({ owner: this.identifier });
+    this.state.grabbedObject.set(objId);
+    obj.state.owner.set(this.identifier);
   }
 
   release() {
@@ -62,8 +62,8 @@ class Grabber extends GameObject<GrabberState & GameObjectState> {
     if (!grabbed) return;
     const obj = StateManager.GetObject<GameObject<GameObjectState>>(grabbed)!;
     if (obj.state.owner.get() !== this.identifier) return;
-    this.setState({ grabbedObject: null });
-    obj.setState({ owner: null });
+    this.state.grabbedObject.set(null);
+    obj.state.owner.set(null);
   }
 
   update(delta: number) {
@@ -73,8 +73,9 @@ class Grabber extends GameObject<GrabberState & GameObjectState> {
       const obj = StateManager.GetObject<GameObject<GameObjectState>>(grabbed)!;
 
       const pos = this.state.position.get();
-      // We don't tell the network, since they'll do it themselves.
-      obj.state.position.set({ x: pos.x, y: pos.y + 0.02, z: pos.z }, true);
+
+      // We don't tell the network, since they'll do this update themselves.
+      obj.state.position.set({ x: pos.x, y: pos.y + 0.02, z: pos.z }, false);
     }
   }
 
@@ -135,15 +136,6 @@ class ClientGrabber extends Grabber {
 
     Game.instance.scene.add(this);
 
-    window.addEventListener("mousedown", () => {
-      const currentHighlight = this.state.highlightedObject.get();
-      if (!currentHighlight) return;
-
-      Authority.Do(this, this.grab, currentHighlight);
-    });
-
-    window.addEventListener("mouseup", () => Authority.Do(this, this.release));
-
     ClientGrabber.instance = this;
   }
 
@@ -170,7 +162,7 @@ class ClientGrabber extends Grabber {
     // Only consider the closest such object
     if (intersects[0]) {
       if (!this.state.visible.get()) {
-        this.setState({ visible: true });
+        this.state.visible.set(true);
       }
 
       const intersect = intersects[0];
@@ -181,7 +173,7 @@ class ClientGrabber extends Grabber {
       if (oldLoc === undefined || newLoc.distanceTo(oldLoc) > 0.001) {
         // Move the pointer
         let loc = intersects[0].point;
-        this.setState({ position: { x: loc.x, y: loc.y, z: loc.z } });
+        this.state.position.set({ x: loc.x, y: loc.y, z: loc.z });
         this.intersect = intersect;
       }
 
@@ -190,6 +182,15 @@ class ClientGrabber extends Grabber {
       this.setSelection(obj);
     } else {
       this.setSelection(null);
+    }
+
+    const currentHighlight = this.state.highlightedObject.get();
+    if (Input.mouse.justPressed && currentHighlight) {
+      Authority.Do(this, this.grab, currentHighlight);
+    }
+
+    if (Input.mouse.justReleased) {
+      Authority.Do(this, this.release, currentHighlight);
     }
   }
 
@@ -207,10 +208,8 @@ class ClientGrabber extends Grabber {
     }
 
     if (newSelection !== prevSelection) {
-      this.setState({
-        highlightedObject: newSelection,
-        visible: newSelection !== null,
-      });
+      this.state.highlightedObject.set(newSelection);
+      this.state.visible.set(newSelection !== null);
 
       if (Input.mouse.pressed) {
         const over = newSelection !== null && prevSelection === null;

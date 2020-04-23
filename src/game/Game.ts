@@ -19,10 +19,9 @@ import {
 import { AutoUV } from "./GeometryTools";
 import { TextureList, Texture } from "./resource";
 import Log from "./Log";
-import NetworkClient from "./managers/NetworkClient";
+import NetworkClient, { StateMode } from "./managers/NetworkClient";
 import StateManager from "./managers/StateManager";
 import GrabberManager from "./controllers/GrabberController";
-import TrackedObject from "./TrackedObject";
 import Input from "./managers/Input";
 import IDManager from "./managers/IDManager";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
@@ -35,6 +34,7 @@ import * as component from "./component";
 import PlayerManager from "./managers/PlayerManager";
 import Authority from "./managers/Authority";
 import CameraControls from "./CameraControls";
+import BasicObject from "./BasicObject";
 
 export enum GameMode {
   HOST,
@@ -150,10 +150,17 @@ class Game {
     (window as any).resource = resource;
     (window as any).component = component;
     (window as any).controller = controller;
+
+    // We set this local so that state changes made before setup is complete
+    // are not propagated to the network.
+    NetworkClient.stateMode = StateMode.LOCAL;
   }
 
   postGameSetup() {
     new GrabberManager();
+
+    // Re-enable state propagation.
+    NetworkClient.stateMode = StateMode.GLOBAL;
   }
 
   unloadScene() {
@@ -161,10 +168,10 @@ class Game {
     // Currently it is assumed that the interpreter will
     // only add GameObjects to the scene, so this should be complete.
     this.scene.children
-      .filter((x) => x instanceof TrackedObject)
+      .filter((x) => x instanceof BasicObject)
       .forEach((go) => {
         console.log("Unloading " + go.constructor.name);
-        this.scene.remove(go);
+        (go as BasicObject).dispose();
       });
 
     // Set the global state controls back to their initial values
