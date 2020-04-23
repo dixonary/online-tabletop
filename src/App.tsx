@@ -4,7 +4,8 @@ import { PlayArrow } from "@material-ui/icons";
 import "./App.scss";
 import testScript from "./TestScript";
 import Editor from "@monaco-editor/react";
-import GameRenderer, { Mode } from "./GameRenderer";
+import GameRenderer from "./GameRenderer";
+import { GameMode } from "./game/Game";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
@@ -55,12 +56,12 @@ function App() {
                 />
               </Col>
               <Col md="6" className="right panel">
-                <GameRenderer mode={Mode.HOST} sceneCode={editorContent} />
+                <GameRenderer mode={GameMode.HOST} sceneCode={editorContent} />
               </Col>
             </Route>
 
             <Route path="/:roomCode">
-              <GameRenderer mode={Mode.JOIN} />
+              <GameRenderer mode={GameMode.JOIN} />
             </Route>
           </Switch>
         </Row>

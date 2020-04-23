@@ -1,5 +1,5 @@
 import { Object3D } from "three";
-import { GlobalAccess } from "../GameRenderer";
+import Game from "./Game";
 
 export enum LogLevel {
   INFO,
@@ -10,20 +10,19 @@ export enum LogLevel {
 
 class Log extends Object3D {
   static instance: Log;
-  root: HTMLDivElement;
+  root: HTMLElement;
   messages: Message[] = [];
   // Visual gap between items
   gap: number = 5;
 
-  static Initialize(root: HTMLDivElement) {
+  static Initialize(root: HTMLElement) {
     Log.instance = new Log(root);
-    const { scene } = (window as any) as GlobalAccess;
-    scene.add(Log.instance);
+    Game.instance.scene.add(Log.instance);
   }
 
-  constructor(root: HTMLDivElement) {
+  constructor(root: HTMLElement) {
     super();
-    this.root = document.createElement("div") as HTMLDivElement;
+    this.root = document.createElement("div") as HTMLElement;
     this.root.classList.add("log");
     root.appendChild(this.root);
   }

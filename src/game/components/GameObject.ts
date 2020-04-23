@@ -1,13 +1,13 @@
 import { Mesh, Vector3 } from "three";
-import Log from "./Log";
-import { GlobalAccess } from "../GameRenderer";
-import { Pos3 } from "./StateStructures";
-import TrackedObject from "./TrackedObject";
+import Log from "../Log";
+import { Pos3 } from "../StateStructures";
+import TrackedObject from "../TrackedObject";
 
 export type GameObjectState = {
   position: Pos3; // The position of the object.
   owner: string | null; // The ID of the person who is currently manipulating the object.
   selectable: boolean;
+  grabbable: boolean;
 };
 
 /**
@@ -17,8 +17,6 @@ export type GameObjectState = {
 class GameObject<State extends GameObjectState> extends TrackedObject<State> {
   // If highlighting is enabled, the main mesh is what will be highlighted.
   mainMesh: Mesh | undefined;
-
-  selectable: boolean = true;
 
   // The client (grabber) which currently controls this object.
   owner: string | null = null;
@@ -31,7 +29,13 @@ class GameObject<State extends GameObjectState> extends TrackedObject<State> {
   constructor(initialState: State) {
     super(initialState);
 
-    this.state.position.addHook(([{ x, y, z }]) => {
+    this.position.set(
+      initialState.position.x,
+      initialState.position.y,
+      initialState.position.z
+    );
+
+    this.state.position.addHook(({ x, y, z }) => {
       if (this.smoothMovement) {
         if (this.smoothPosition) this.smoothPosition.set(x, y, z);
         else this.smoothPosition = new Vector3(x, y, z);
@@ -39,20 +43,10 @@ class GameObject<State extends GameObjectState> extends TrackedObject<State> {
         this.position.set(x, y, z);
       }
     });
-    this.state.owner.addHook(([newOwner]) => {
+    this.state.owner.addHook((newOwner) => {
+      Log.Info(`${this.constructor.name} is now owned by ${newOwner}`);
       this.owner = newOwner;
     });
-    this.state.selectable.addHook(([newSelectable]) => {
-      this.selectable = newSelectable;
-    });
-
-    const global = (window as any) as GlobalAccess;
-    global.scene.add(this);
-  }
-
-  kill() {
-    const global = (window as any) as GlobalAccess;
-    global.scene.remove(this);
   }
 
   add(...os: any[]) {
@@ -71,6 +65,8 @@ class GameObject<State extends GameObjectState> extends TrackedObject<State> {
   }
 
   update(delta: number) {
+    super.update(delta);
+
     // Do smooth positional update
     if (this.smoothPosition) {
       const diff = this.smoothPosition.clone().sub(this.position);
@@ -85,9 +81,6 @@ class GameObject<State extends GameObjectState> extends TrackedObject<State> {
         this.smoothPosition = null;
       }
     }
-
-    // Allow for custom update hooks!
-    this.event("update");
   }
 }
 

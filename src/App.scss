@@ -39,12 +39,18 @@ main {
   outline: none !important;
 }
 
+#game-target {
+  overflow: hidden;
+}
+
 .log {
   position: absolute;
   width: calc(100% - 10px);
   height: 100%;
   top: 0;
   left: 0;
+
+  overflow: hidden;
 
   font-family: sans-serif;
 

@@ -15,6 +15,17 @@ const cardNames =
 
 const TABLE_HEIGHT = 1;
 
+const SEAT_LOCATIONS = new controller.SeatController([
+  {
+    position: {x:0, y:TABLE_HEIGHT+0.5, z:0.5}
+  },
+  {
+    position: {x:0, y:TABLE_HEIGHT+0.5, z:-0.5}
+  }
+],
+  {x:0, y:TABLE_HEIGHT, z:0}
+);
+
 
 /******************************************************************************/
 /*                          Resources                                         */
@@ -29,13 +40,13 @@ const cardBack = resource.Texture.get("${process.env.PUBLIC_URL}/resources/ll/ba
 /******************************************************************************/
 /*                         Game components                                    */
 
-const tabletop = new game.Tabletop({
+const tabletop = new component.Tabletop({
   width: 1,
   height: TABLE_HEIGHT,
   depth:1
 });
 
-const deck = game.Deck.Populated(
+const deck = new component.PopulatedDeck (
   cardFronts,
   cardBack,
   {
@@ -159,24 +170,6 @@ deck.position.setY(TABLE_HEIGHT);
 
 // youLoseText.visible = ({turn, clientId}) => 
 //   turn.turnOrder.indexOf(clientId) === -1;
-
-
-// /******************************************************************************/
-// /*                              Globals                                       */
-
-// // game defines the component assets that exist in the game.
-// const game = { 
-//   tabletop, 
-//   deck, 
-//   sidebar, 
-//   hands, 
-//   turn, 
-//   discard,
-//   endTurnButton 
-// };
-
-const minimumPlayers = 2;
-const maximumPlayers = 4;
 `;
 
 export default testScript;

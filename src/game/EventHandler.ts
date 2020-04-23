@@ -1,14 +1,14 @@
 import MapSet from "./MapSet";
 
-export type Precondition = (...vars: any[]) => boolean;
-export type Callback<Params extends any[]> = (vars: Params) => void;
+export type Precondition<Params extends any> = (vars: Params) => boolean;
+export type Callback<Params extends any> = (vars: Params) => void;
 
 export interface IEventHandler {
   /** Add a precondition to an event. */
-  addPre(eventName: string, pre: Precondition): void;
+  addPre(eventName: string, pre: Precondition<any>): void;
 
   /** Remove a precondition from an event. */
-  removePre(eventName: string, pre: Precondition): void;
+  removePre(eventName: string, pre: Precondition<any>): void;
 
   /** Add a callback to an event. */
   on(eventName: string, callback: Callback<any>): void;
@@ -17,14 +17,79 @@ export interface IEventHandler {
   off(eventName: string, callback?: Callback<any>): void;
 
   /** Trigger an event. */
-  event(eventName: string, ...vars: any[]): boolean;
+  event(eventName: string, data: any): boolean;
 }
 
-/** A class for managing events.
- *
+export class EventType<K> {
+  preconditions: Set<Precondition<K>> = new Set();
+  callbacks: Set<Callback<K>> = new Set();
+
+  /**
+   * Add a precondition to an event. The event will not fire if
+   * any precondition is unmet.
+   * @param pre The precondition to add.
+   */
+  addPre(pre: Precondition<K>) {
+    this.preconditions.add(pre);
+  }
+
+  /**
+   * Remove a precondition from an event.
+   * @param pre The precondition to remove.
+   */
+  removePre(pre: Precondition<K>) {
+    this.preconditions.delete(pre);
+  }
+
+  /**
+   * Add a callback to an event.
+   */
+  on = (callback: Callback<K>) => this.callbacks.add(callback);
+
+  /**
+   * Remove a callback from an event.
+   */
+  off = (callback: Callback<K>) => this.callbacks.delete(callback);
+
+  /**
+   * Set a callback which will be activated exactly once.
+   */
+  once(callback: Callback<K>) {
+    const wrapper = (data: K) => {
+      this.callbacks.delete(wrapper);
+      callback(data);
+    };
+    this.callbacks.add(wrapper);
+  }
+
+  /**
+   * Activate the event.
+   */
+  call(data: K) {
+    for (let pre of this.preconditions) {
+      if (!pre(data)) return;
+    }
+  }
+
+  /**
+   * Whether the event has nothing tied to it.
+   * If this is true we can remove it from the event handler.
+   */
+  isEmpty() {
+    return this.preconditions.size === 0 && this.callbacks.size === 0;
+  }
+}
+
+/**
+ * A class for managing events.
  */
-export class EventHandler implements IEventHandler {
-  preconditions: MapSet<string, Precondition> = new MapSet();
+export class EventHandler extends Map<string, EventType<any>> {
+  get<K>(name: string) {
+    if (super.get(name) === undefined) this.set(name, new EventType<K>());
+    return super.get(name);
+  }
+
+  preconditions: MapSet<string, Precondition<any>> = new MapSet();
   callbacks: MapSet<string, Callback<any>> = new MapSet();
 
   /**
@@ -32,10 +97,10 @@ export class EventHandler implements IEventHandler {
    */
   static universe: EventHandler = new EventHandler();
 
-  addPre(eventName: string, pre: Precondition) {
+  addPre(eventName: string, pre: Precondition<any>) {
     this.preconditions.add(eventName, pre);
   }
-  removePre(eventName: string, pre: Precondition) {
+  removePre(eventName: string, pre: Precondition<any>) {
     this.preconditions.remove(eventName, pre);
   }
 
@@ -56,9 +121,9 @@ export class EventHandler implements IEventHandler {
     this.callbacks.add(eventName, wrapperCallback);
   }
 
-  event(eventName: string, ...vars: any[]) {
+  event(eventName: string, vars?: any) {
     for (let pre of this.preconditions.get0(eventName)) {
-      if (!pre()) return false;
+      if (!pre(vars)) return false;
     }
     this.callbacks.get0(eventName).forEach((cb) => cb(vars));
 

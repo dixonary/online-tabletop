@@ -1,12 +1,11 @@
-import TrackedObject from "./TrackedObject";
-import { EventHandler, Callback } from "./EventHandler";
-import { GlobalAccess } from "../GameRenderer";
-import Log from "./Log";
+import TrackedObject from "../TrackedObject";
+import { EventHandler, Callback } from "../EventHandler";
+import Log from "../Log";
 
 export type Hookable<K> = {
   [k in keyof K]: Hooked<K[k]>;
 };
-export type Stateful<K> = StateManager<K> & Hookable<K>;
+export type Stateful<K> = ObjectState<K> & Hookable<K>;
 
 /**
  * A hooked value is one to which update callbacks can be attached.
@@ -37,7 +36,7 @@ class Hooked<Value> {
    * Add an update callback to the callback set.
    * @param callback The callback to add.
    */
-  addHook(callback: Callback<[Value]>) {
+  addHook(callback: Callback<Value>) {
     this.eventHandler.on("value", callback);
   }
 
@@ -45,12 +44,12 @@ class Hooked<Value> {
    * Remove an update callback from the callback set.
    * @param callback The callback to remove.
    */
-  remHook(callback: Callback<[Value]>) {
+  remHook(callback: Callback<Value>) {
     this.eventHandler.off("value", callback);
   }
 }
 
-class StateManager<K> {
+class ObjectState<K> {
   obj: TrackedObject<K>;
   typeName: string;
 
@@ -84,8 +83,8 @@ class StateManager<K> {
   }
 }
 
-class StateController {
-  static states: Map<string, StateManager<any>> = new Map();
+class StateManager {
+  static states: Map<string, ObjectState<any>> = new Map();
 
   /**
    * Update the internal state of the game's objects.
@@ -94,7 +93,7 @@ class StateController {
    * @param propagate Propagate the changes to the controlling object.
    */
   static UpdateState(id: string, newState: any, propagate: boolean = true) {
-    StateController.states.get(id)?.updateState(newState, propagate);
+    StateManager.states.get(id)?.updateState(newState, propagate);
   }
 
   /**
@@ -103,12 +102,10 @@ class StateController {
    * @param className The type of the object to initialise.
    * @param initialState The initial state it should be given.
    */
-  static Create(className: string, nonce: string, ...params: any[]) {
+  static Create(className: string, ...params: any[]) {
     Log.Info(JSON.stringify(params));
-    const obj = new ((window as any) as GlobalAccess).game[className](
-      ...params
-    );
-    EventHandler.universe.event(`_CREATE_${nonce}`, obj.identifier, obj);
+    // TODO upgrade this so it can create anything, not just things that are "components"
+    new (window as any).component[className](...params);
   }
 
   /**
@@ -116,8 +113,8 @@ class StateController {
    * @param id The identifier to add.
    * @param state The state of the machine.
    */
-  static Register(id: string, state: StateManager<any>) {
-    StateController.states.set(id, state);
+  static Register(id: string, state: ObjectState<any>) {
+    StateManager.states.set(id, state);
   }
 
   /**
@@ -125,26 +122,28 @@ class StateController {
    * @param id the identifier of the stateful item to destroy.
    */
   static Destroy(id: string) {
-    StateController.states.get(id)?.destroy();
-    StateController.states.delete(id);
+    StateManager.states.get(id)?.destroy();
+    StateManager.states.delete(id);
   }
 
-  static GetObject(id: string) {
-    return StateController.states.get(id)?.obj;
+  static GetObject<T extends TrackedObject<any>>(id: string) {
+    const state = StateManager.states.get(id);
+    if (state?.obj) return state.obj as T;
+    else return undefined;
   }
 
   /**
    * Remove ALL elements from the state.
    */
   static Clear() {
-    StateController.states.clear();
+    StateManager.states.clear();
   }
 }
 
 export type Data<K> = {
   id: string;
   className: string;
-  state: StateManager<K>;
+  state: ObjectState<K>;
 };
 
 export type InitialData = {
@@ -153,4 +152,5 @@ export type InitialData = {
   initialState: any;
 };
 
-export { StateManager, StateController };
+export default StateManager;
+export { ObjectState };
