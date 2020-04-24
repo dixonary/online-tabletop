@@ -34,6 +34,8 @@ export type AbstractCardState = {
 class Card extends GameObject<CardState> {
   entity: Mesh;
   static thickness: number = 0.001;
+  static width: number = 0.065;
+  static height: number = 0.089;
 
   constructor({
     frontTexture,
@@ -92,7 +94,7 @@ class Card extends GameObject<CardState> {
     let stl = resource.STL.get(process.env.PUBLIC_URL + "/resources/card.stl");
 
     const setupGeometry = (geom: BufferGeometry) => {
-      ResizeToFit(geom, new Vector3(0.065, Card.thickness, 0.089));
+      ResizeToFit(geom, new Vector3(Card.width, Card.thickness, Card.height));
       const geometry = new Geometry().fromBufferGeometry(geom);
 
       geometry.computeBoundingBox();

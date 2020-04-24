@@ -48,6 +48,7 @@ class Deck extends GameObject<DeckState> {
     });
 
     this.pile = this.makePile();
+    this.add(this.pile);
 
     // Update the rendering to match the data
     this.updatePileVisual(this.state.cards.get());
@@ -83,7 +84,7 @@ class Deck extends GameObject<DeckState> {
       faceDown: this.state.faceDown.get(),
       initialPos: {
         x: this.position.x,
-        y: this.position.y + this.scale.y * Card.thickness,
+        y: this.position.y,
         z: this.position.z,
       },
     });
@@ -100,7 +101,7 @@ class Deck extends GameObject<DeckState> {
     const pile = new Mesh();
 
     const setupGeometry = (geom: BufferGeometry) => {
-      ResizeToFit(geom, new Vector3(0.065, 0.001, 0.089));
+      ResizeToFit(geom, new Vector3(Card.width, Card.thickness, Card.height));
       const geometry = new Geometry().fromBufferGeometry(geom);
       geometry.computeVertexNormals();
       geometry.computeBoundingBox();
@@ -144,6 +145,10 @@ class Deck extends GameObject<DeckState> {
         }
       }
 
+      const center = new Vector3();
+      bb.getCenter(center);
+      pile.position.set(-center.x, size.y, -center.z);
+
       pile.geometry = geometry;
       this.mainMesh = pile;
     };
@@ -158,7 +163,6 @@ class Deck extends GameObject<DeckState> {
     const bottomMat = new MeshBasicMaterial({ color: "#ffffff" });
     pile.material = [whiteMat, topMat, bottomMat];
 
-    this.add(pile);
     return pile;
   }
 
@@ -167,11 +171,8 @@ class Deck extends GameObject<DeckState> {
    * @param cards The new abstract state of the pile.
    */
   updatePileVisual(cards: AbstractCardState[]) {
-    console.log(cards.length);
-
     if (cards.length > 0) {
       this.pile.visible = true;
-      this.pile.scale.y = cards.length;
 
       const topCard = cards[0];
       const bottomCard = cards[cards.length - 1];
@@ -184,7 +185,7 @@ class Deck extends GameObject<DeckState> {
       this.pile.visible = false;
     }
 
-    this.pile.position.y = this.pile.scale.y * Card.thickness;
+    this.scale.y = cards.length;
   }
 
   kill() {
