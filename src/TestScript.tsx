@@ -15,7 +15,7 @@ const cardNames =
 
 const TABLE_HEIGHT = 1;
 
-const SEAT_LOCATIONS = new controller.SeatController([
+const seatController = new controller.SeatController([
   {
     position: {x:0, y:TABLE_HEIGHT+0.5, z:0.5}
   },
@@ -25,6 +25,17 @@ const SEAT_LOCATIONS = new controller.SeatController([
 ],
   {x:0, y:TABLE_HEIGHT, z:0}
 );
+
+const handController = new controller.HandController([
+  {
+    pos: {x:0, y:TABLE_HEIGHT, z:0.4},
+    quat: struct.AxisAngle({...struct.Up, angle:0})
+  },
+  {
+    pos: {x:0, y:TABLE_HEIGHT, z:-0.4},
+    quat: struct.AxisAngle({...struct.Up, angle:Math.PI})
+  },
+]);
 
 
 /******************************************************************************/

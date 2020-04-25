@@ -1,11 +1,18 @@
-import GameObject, { GameObjectState } from "./GameObject";
+import GameComponent, { GameComponentState } from "./GameComponent";
 import { Pos3 } from "../StateStructures";
 import Game from "../Game";
 
-class Seat extends GameObject<GameObjectState> {
+class Seat extends GameComponent<GameComponentState> {
   clientId: string;
   constructor(position: Pos3, clientId: string) {
-    super({ position, owner: clientId, selectable: false, grabbable: false });
+    super({
+      position,
+      owner: clientId,
+      selectable: false,
+      grabber: null,
+      grabbable: false,
+      quaternion: { x: 0, y: 0, z: 0, w: 0 },
+    });
     this.clientId = clientId;
     this.setupGeometry();
   }

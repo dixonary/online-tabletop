@@ -26,8 +26,8 @@ class PlayerManager extends TrackedObject<PlayerManagerData> {
     // We override the definitions here to avoid a circular dependency.
     // The dependency cycle was
     // PlayerManager -> TrackedObject -> NetworkClient -> PlayerManager
-    NetworkClient.UpdatePlayerList = PlayerManager.SetPlayers;
-    NetworkClient.SetClientId = PlayerManager.SetClientId;
+    NetworkClient.ReceivePlayerList = PlayerManager.SetPlayers;
+    NetworkClient.ReceiveClientId = PlayerManager.SetClientId;
   }
 
   static SetPlayers(clients: { id: string }[]) {

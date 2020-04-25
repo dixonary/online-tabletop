@@ -11,10 +11,11 @@ export enum StateMode {
 class NetworkClient {
   static socket: SocketIOClient.Socket;
   static roomCode: string | undefined;
-  static server = "http://142.93.46.65:3001";
-  // static server = "http://douglas:3001";
+  // static server = "http://142.93.46.65:3001";
+  static server = "http://douglas:3001";
   static isHost = false;
   static stateMode: StateMode = StateMode.LOCAL;
+  static userIdentifier: string;
 
   static Initialize() {
     if (NetworkClient.socket) return;
@@ -24,6 +25,15 @@ class NetworkClient {
     NetworkClient.socket = io(NetworkClient.server, {
       transports: ["websocket"],
     });
+
+    let user = localStorage.getItem("userIdentifier");
+    if (!user) {
+      user = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
+      localStorage.setItem("userIdentifier", user);
+    }
+    NetworkClient.userIdentifier = user;
+    console.log(`User identifier is: ${user}`);
+
     const socket = NetworkClient.socket;
     socket.on("connect", (client: any) => {
       Log.Success(`Connected to ${NetworkClient.server}`);
@@ -32,8 +42,8 @@ class NetworkClient {
       socket.on("state", NetworkClient.ReceiveStateUpdate);
       socket.on("create", NetworkClient.ReceiveCreation);
       socket.on("destroy", NetworkClient.ReceiveDestruction);
-      socket.on("players", NetworkClient.UpdatePlayerList);
-      socket.on("clientID", NetworkClient.SetClientId);
+      socket.on("players", NetworkClient.ReceivePlayerList);
+      socket.on("clientID", NetworkClient.ReceiveClientId);
       socket.on("info", Log.Info);
       socket.on("err", Log.Error);
     });
@@ -60,7 +70,7 @@ class NetworkClient {
     socket.on("start", () => {
       Game.instance.loadScene();
     });
-    socket.emit("join", roomCode);
+    socket.emit("join", roomCode, NetworkClient.userIdentifier);
   }
 
   static ReceiveRoomCode(code: string) {
@@ -68,10 +78,10 @@ class NetworkClient {
     Log.Success(`The room code is: ${code}`);
   }
 
-  static UpdatePlayerList(clientIds: { id: string }[]) {
+  static ReceivePlayerList(clientIds: { id: string }[]) {
     //This function will be overridden by the initialization of PlayerManager.
   }
-  static SetClientId(id: string) {
+  static ReceiveClientId(id: string) {
     //This function will be overridden by the initialization of PlayerManager.
   }
 
@@ -81,7 +91,7 @@ class NetworkClient {
    * @param data
    */
   static SendStateUpdate(id: string, property: string, newState: any) {
-    //Log.Info(`-> ${id} :: ! ${JSON.stringify(newState)}`);
+    // Log.Info(`-> ${id} :: ! ${JSON.stringify(newState)}`);
     if (NetworkClient.stateMode === StateMode.GLOBAL)
       NetworkClient.socket.emit("state", id, property, newState);
   }

@@ -10,17 +10,15 @@ import {
   Box3,
   Vector2,
   Material,
-  Quaternion,
 } from "three";
 import { ResizeToFit } from "../GeometryTools";
-import GameObject, { GameObjectState } from "./GameObject";
+import GameComponent, { GameComponentState } from "./GameComponent";
 import StateManager from "../managers/StateManager";
 import Grabber from "./Grabber";
 import Card, { AbstractCardState } from "./Card";
 import Authority from "../managers/Authority";
-import Log from "../Log";
 
-type DeckState = GameObjectState & {
+type DeckState = GameComponentState & {
   cards: AbstractCardState[];
   faceDown: boolean;
 };
@@ -28,7 +26,7 @@ type DeckState = GameObjectState & {
 /**
  * A deck is a physical pile of cards.
  */
-class Deck extends GameObject<DeckState> {
+class Deck extends GameComponent<DeckState> {
   pile: Mesh;
 
   constructor({
@@ -42,9 +40,11 @@ class Deck extends GameObject<DeckState> {
       owner: null,
       selectable: true,
       grabbable: false,
+      grabber: null,
       position: { x: 0, y: 0, z: 0 },
       cards,
       faceDown,
+      quaternion: { x: 0, y: 0, z: 0, w: 0 },
     });
 
     this.pile = this.makePile();
@@ -63,7 +63,14 @@ class Deck extends GameObject<DeckState> {
     super.update(delta);
   }
 
+  /**
+   * Draw a card.
+   * @param grabberId The grabber which is drawing the card. This grabber
+   * will be grab the newly summoned card.
+   */
   draw(grabberId: string) {
+    if (!Authority.RequireAuthority()) return;
+
     const grabber = StateManager.GetObject<Grabber>(grabberId);
 
     if (!grabber) return;
@@ -87,6 +94,7 @@ class Deck extends GameObject<DeckState> {
         y: this.position.y,
         z: this.position.z,
       },
+      secret: this.state.faceDown.get(),
     });
 
     grabber.grab(card.identifier);

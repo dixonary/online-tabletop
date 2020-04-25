@@ -1,5 +1,5 @@
 import { STL, TextureList } from "../resource";
-import GameObject from "./GameObject";
+import GameComponent from "./GameComponent";
 import {
   Mesh,
   Vector3,
@@ -10,7 +10,9 @@ import {
   MeshStandardMaterial,
 } from "three";
 import { AutoUV, ResizeToFit } from "../GeometryTools";
-import { Dim3, Pos3 } from "../StateStructures";
+import { Dim3, Pos3, Quat } from "../StateStructures";
+import * as CANNON from "cannon";
+import Physics from "../managers/Physics";
 
 type TabletopState = {
   owner: string | null;
@@ -18,27 +20,47 @@ type TabletopState = {
   position: Pos3;
   selectable: boolean;
   grabbable: boolean;
+  grabber: null;
+  quaternion: Quat;
 };
 
-class Tabletop extends GameObject<TabletopState> {
+class Tabletop extends GameComponent<TabletopState> {
   table: Mesh;
 
   constructor(dimensions: Dim3, position: Pos3 = { x: 0, y: 0, z: 0 }) {
     super({
       dimensions,
       position,
+      quaternion: { x: 0, y: 0, z: 0, w: 0 },
       owner: null,
       selectable: false,
       grabbable: false,
+      grabber: null,
     });
 
     this.table = this.initialiseMesh();
+    this.body = this.createBody(
+      dimensions.width,
+      dimensions.height,
+      dimensions.depth
+    );
+    Physics.world.addBody(this.body);
 
     this.state.dimensions.addHook(({ width, height, depth }) => {
       this.scale.set(width, height, depth);
+      this.createBody(width, height, depth);
     });
 
     this.state.selectable.set(false);
+  }
+
+  createBody(width: number, height: number, depth: number) {
+    const body = new CANNON.Body();
+    const dims = this.state.dimensions.get();
+    const shape = new CANNON.Box(new CANNON.Vec3(width, depth, height));
+    body.addShape(shape, new CANNON.Vec3(0, 0, dims.height / 2));
+
+    return body;
   }
 
   initialiseMesh() {
@@ -53,7 +75,6 @@ class Tabletop extends GameObject<TabletopState> {
       geom.computeBoundingBox();
       ResizeToFit(geom, new Vector3(1, 1, 1));
 
-      geom.computeFaceNormals();
       geom.computeVertexNormals();
       AutoUV(geom);
 

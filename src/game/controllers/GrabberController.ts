@@ -1,6 +1,7 @@
 import TrackedObject from "../TrackedObject";
-import Grabber, { ClientGrabber } from "../components/Grabber";
+import Grabber from "../components/Grabber";
 import PlayerManager from "../managers/PlayerManager";
+import ClientGrabber from "../components/ClientGrabber";
 
 /**
  * The mapping from client ID to grabber ID.

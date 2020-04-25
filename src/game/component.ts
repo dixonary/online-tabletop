@@ -1,6 +1,6 @@
 import Tabletop from "./components/Tabletop";
 import Deck, { PopulatedDeck } from "./components/Deck";
 import Card from "./components/Card";
-import GameObject from "./components/GameObject";
+import GameComponent from "./components/GameComponent";
 
-export { Deck, PopulatedDeck, Card, Tabletop, GameObject };
+export { Deck, PopulatedDeck, Card, Tabletop, GameComponent };

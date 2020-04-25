@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Navbar, Button, Row, Col, Container } from "react-bootstrap";
 import { PlayArrow } from "@material-ui/icons";
 import "./App.scss";
@@ -12,6 +12,7 @@ function App() {
   const [editorReady, setEditorReady] = useState(false);
   const [editorContent, setEditorContent] = useState(testScript);
   const [getter, setGetter] = useState<() => string>(() => "");
+  const [userKey, setUserKey] = useState<string>("");
 
   const handleMount = useCallback(
     (gv: () => string) => {

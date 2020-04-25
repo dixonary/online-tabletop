@@ -1,11 +1,11 @@
-import { Camera, Raycaster, Vector3, Plane, Box3 } from "three";
+import { Raycaster, Vector3, Plane, Box3, PerspectiveCamera } from "three";
 import BasicObject from "./BasicObject";
 import Input from "./managers/Input";
 import { ClientSeat } from "./components/Seat";
-import { ClientGrabber } from "./components/Grabber";
+import ClientGrabber from "./components/ClientGrabber";
 
 class CameraControls extends BasicObject {
-  private camera: Camera;
+  private camera: PerspectiveCamera;
 
   private raycaster: Raycaster = new Raycaster();
 
@@ -21,7 +21,7 @@ class CameraControls extends BasicObject {
   private cameraBounds: Box3;
   private panning: boolean = false;
 
-  constructor(camera: Camera) {
+  constructor(camera: PerspectiveCamera) {
     super();
     this.camera = camera;
     this.panPlane = new Plane(new Vector3(0, -1, 0), this.panPlaneHeight);
@@ -68,10 +68,22 @@ class CameraControls extends BasicObject {
 
     if (
       Input.mouse.justPressed &&
+      ClientGrabber.instance &&
       ClientGrabber.instance.state.highlightedObject.get() === null &&
       ClientGrabber.instance.state.grabbedObject.get() === null
     ) {
       this.panning = true;
+    }
+
+    if (
+      Input.mouse.scrollDelta !== 0 &&
+      ClientGrabber.instance &&
+      ClientGrabber.instance.state.grabbedObject.get() === null
+    ) {
+      this.camera.zoom *= Math.pow(1.1, -Input.mouse.scrollDelta);
+      this.camera.zoom = Math.max(this.camera.zoom, 1);
+      this.camera.zoom = Math.min(this.camera.zoom, 4);
+      this.camera.updateProjectionMatrix();
     }
 
     if (Input.mouse.justReleased) {

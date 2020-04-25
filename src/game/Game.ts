@@ -16,7 +16,7 @@ import {
   Color,
   Clock,
 } from "three";
-import { AutoUV } from "./GeometryTools";
+import { AutoUV, ApplyFaceMaterials } from "./GeometryTools";
 import { TextureList, Texture } from "./resource";
 import Log from "./Log";
 import NetworkClient, { StateMode } from "./managers/NetworkClient";
@@ -28,13 +28,19 @@ import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 
-import * as resource from "./resource";
-import * as controller from "./controller";
-import * as component from "./component";
 import PlayerManager from "./managers/PlayerManager";
 import Authority from "./managers/Authority";
 import CameraControls from "./CameraControls";
 import BasicObject from "./BasicObject";
+import Physics from "./managers/Physics";
+import * as CANNON from "cannon";
+
+// Exports for the client
+import * as resource from "./resource";
+import * as controller from "./controller";
+import * as component from "./component";
+import * as struct from "./StateStructures";
+import Tooltip from "./managers/Tooltip";
 
 export enum GameMode {
   HOST,
@@ -49,8 +55,8 @@ class Game {
 
   sceneCode: string = "";
   scene: Scene;
-  camera!: PerspectiveCamera;
-  renderer!: WebGLRenderer;
+  camera: PerspectiveCamera;
+  renderer: WebGLRenderer;
   cameraControls: CameraControls;
 
   composer: EffectComposer;
@@ -76,7 +82,6 @@ class Game {
     this.camera = this.initializeCamera();
 
     this.addLighting();
-    this.room = new Room();
 
     this.clock = new Clock();
 
@@ -95,17 +100,23 @@ class Game {
     this.outlinePass.edgeStrength = 3;
     this.outlinePass.edgeGlow = 0;
     this.outlinePass.edgeThickness = 1;
+    // this.composer.addPass(this.outlinePass);
 
     // Initialize global managers
     Log.Initialize(root);
     Input.Initialize(root);
+    Tooltip.Initialize(root);
     NetworkClient.Initialize();
     PlayerManager.Initialize();
     Authority.Initialize();
+    Physics.Initialize();
 
     this.cameraControls = new CameraControls(this.camera);
 
     window.addEventListener("resize", this.resizeHandler);
+
+    // Generate the default room
+    this.room = new Room();
 
     // Start rendering
     this.handleResize();
@@ -113,11 +124,14 @@ class Game {
   }
 
   initializeRenderer() {
-    const renderer = new WebGLRenderer({ antialias: true });
+    const renderer = new WebGLRenderer({
+      antialias: false,
+      powerPreference: "high-performance",
+    });
     renderer.setClearColor("#D9C2F0");
     renderer.autoClearColor = false;
     renderer.setSize(0, 0);
-    renderer.shadowMap.enabled = true;
+    // renderer.shadowMap.enabled = true;
     renderer.autoClearColor = false;
     this.root.appendChild(renderer.domElement);
     return renderer;
@@ -150,6 +164,7 @@ class Game {
     (window as any).resource = resource;
     (window as any).component = component;
     (window as any).controller = controller;
+    (window as any).struct = struct;
 
     // We set this local so that state changes made before setup is complete
     // are not propagated to the network.
@@ -204,7 +219,9 @@ class Game {
     spotty.castShadow = true;
     this.scene.add(spotty);
 
-    var hemi = new HemisphereLight("#aaa");
+    spotty.shadow.mapSize = new Vector2(4096, 4096);
+
+    var hemi = new HemisphereLight("#666");
     hemi.position.set(0, 2.5, 0);
     this.scene.add(hemi);
   }
@@ -219,6 +236,8 @@ class Game {
     this.scene.traverse((o: any) => {
       if (o.update) o.update(delta);
     });
+
+    Physics.world.step(1 / 120, delta);
 
     requestAnimationFrame(this.update.bind(this));
     this.render();
@@ -249,6 +268,7 @@ class Room extends Mesh {
     texture.magFilter = LinearFilter;
     texture.minFilter = LinearFilter;
 
+    // Generate the room geometry
     const w = 6;
     const h = 3;
     const d = 6;
@@ -258,6 +278,10 @@ class Room extends Mesh {
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
 
+    // Set the correct materials to the correct walls
+    ApplyFaceMaterials(geometry, { flat: 2, deep: 1, wide: 1, other: 1 });
+
+    // Load the materials
     const whiteMat = new MeshBasicMaterial({
       color: "#eeeeee",
       side: BackSide,
@@ -283,23 +307,33 @@ class Room extends Mesh {
     floorMat.normalMap = floorTexture.get("norm");
     floorMat.metalnessMap = floorTexture.get("gloss");
 
-    geometry.faces.forEach((face) => {
-      const a = geometry.vertices[face.a];
-      const b = geometry.vertices[face.b];
-      const c = geometry.vertices[face.c];
-      const flat = a.y === b.y && a.y === c.y;
-      const deep = a.x === b.x && b.x === c.x;
-      const wide = a.z === b.z && a.z === c.z;
-      if (flat) face.materialIndex = 2;
-      if (deep) face.materialIndex = 1;
-      if (wide) face.materialIndex = 1;
-    });
-
     this.geometry = geometry;
     this.material = [whiteMat, brickMat, floorMat];
     this.castShadow = false;
     this.receiveShadow = true;
 
+    // Add floor and wall bodies to the physics
+    const floorBody = new CANNON.Body({ mass: 0 });
+    const plane = new CANNON.Plane();
+
+    const bottom = new CANNON.Vec3(0, 0, 0);
+    const top = new CANNON.Vec3(0, 0, h);
+    const left = new CANNON.Vec3(-w / 2, 0, 0);
+    const right = new CANNON.Vec3(w / 2, 0, 0);
+    const front = new CANNON.Vec3(0, -d / 2, 0);
+    const back = new CANNON.Vec3(0, d / 2, 0);
+    const up = new CANNON.Vec3(0, 0, 1);
+    const quat = new CANNON.Quaternion();
+
+    floorBody.addShape(plane, bottom);
+    floorBody.addShape(plane, top, quat.setFromEuler(0, 0, Math.PI));
+
+    for (let x of [left, right, front, back]) {
+      quat.setFromVectors(up, x);
+      floorBody.addShape(plane, x, quat);
+    }
+
+    // Add to the scene
     this.position.setY(h / 2);
     Game.instance.scene.add(this);
   }

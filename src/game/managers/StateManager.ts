@@ -1,6 +1,5 @@
 import TrackedObject from "../TrackedObject";
 import { EventHandler, Callback } from "../EventHandler";
-import Log from "../Log";
 import NetworkClient from "./NetworkClient";
 
 export type Hookable<K> = {
