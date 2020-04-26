@@ -13,6 +13,9 @@ class SeatController extends BasicObject {
     super();
     const clients = PlayerManager.GetPlayers();
 
+    console.log(clients);
+    console.log(PlayerManager.GetClientId());
+
     this.seats = {};
     clients.forEach((p, i) => {
       const seatData = seats[i];

@@ -43,8 +43,8 @@ class Card extends GameComponent<CardState> {
 
   static bodyShape: CANNON.Shape;
 
-  frontFaces!: Face3[];
-  backFaces!: Face3[];
+  frontFaces: Face3[];
+  backFaces: Face3[];
 
   constructor({
     frontTexture,
@@ -87,6 +87,9 @@ class Card extends GameComponent<CardState> {
       faceDown,
       secret: secret ?? false,
     });
+
+    this.frontFaces = [];
+    this.backFaces = [];
 
     this.tooltipText = name;
 

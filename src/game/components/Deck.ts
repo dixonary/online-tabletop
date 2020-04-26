@@ -17,6 +17,9 @@ import StateManager from "../managers/StateManager";
 import Grabber from "./Grabber";
 import Card, { AbstractCardState } from "./Card";
 import Authority from "../managers/Authority";
+import Region from "./Region";
+import NetworkClient, { StateMode } from "../managers/NetworkClient";
+import TrackedObject from "../TrackedObject";
 
 type DeckState = GameComponentState & {
   cards: AbstractCardState[];
@@ -28,6 +31,7 @@ type DeckState = GameComponentState & {
  */
 class Deck extends GameComponent<DeckState> {
   pile: Mesh;
+  region: Region;
 
   constructor({
     cards,
@@ -50,6 +54,24 @@ class Deck extends GameComponent<DeckState> {
     this.pile = this.makePile();
     this.add(this.pile);
 
+    this.region = new Region({
+      pos: this.state.position.get(),
+      dim: { width: Card.width + 0.01, height: 0, depth: Card.height + 0.01 },
+    });
+
+    this.state.position.addHook(({ x, y, z }) => {
+      this.region.state.position.set({ x, y, z }, false);
+    });
+
+    this.region.events.on("object enter", (objId) => {
+      console.log("enter");
+    });
+
+    this.region.events.on("object drop", (objId) => {
+      console.log("drop");
+      Authority.Do(this, this.tryInsert, objId);
+    });
+
     // Update the rendering to match the data
     this.updatePileVisual(this.state.cards.get());
     this.state.cards.addHook(this.updatePileVisual.bind(this));
@@ -61,6 +83,26 @@ class Deck extends GameComponent<DeckState> {
 
   update(delta: number) {
     super.update(delta);
+  }
+
+  /**
+   * Helper function for insertion which gets a reference to the card.
+   */
+  private tryInsert(cardId: string) {
+    if (!Authority.RequireAuthority()) return;
+    const card = StateManager.GetObject(cardId);
+    if (!card || !(card instanceof Card)) return;
+    this.insert(cardId, card);
+  }
+
+  insert(cardId: string, card: Card) {
+    const abstract = card.getAbstract();
+    const cards = this.state.cards.get();
+    const randomPos = Math.floor(Math.random() * cards.length);
+    cards.splice(randomPos, 0, abstract);
+    this.state.cards.set(cards);
+
+    card.destroy();
   }
 
   /**

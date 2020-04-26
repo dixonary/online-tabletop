@@ -32,19 +32,20 @@ class TrackedObject<State extends {}> extends BasicObject {
   }
 
   /**
-   * Request that the authoritative server destroy this object.
-   * If successful, the state machine will call kill() automatically.
-   */
-  requestKill() {
-    Authority.Do(this, this.kill);
-  }
-
-  /**
    * Create an object. Only call this inside of an Authoritatively called function!
    */
   static Create(...params: any[]) {
     NetworkClient.SendCreation(this.prototype.constructor.name, ...params);
     return new (this.prototype.constructor as any)(...params);
+  }
+
+  /**
+   * Authoritatively destroy an object.
+   */
+  destroy() {
+    if (!Authority.RequireAuthority()) return;
+    NetworkClient.SendDestruction(this.identifier);
+    StateManager.Destroy(this.identifier);
   }
 }
 

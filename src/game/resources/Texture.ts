@@ -8,7 +8,7 @@ class Texture extends Resource {
    * @param url URL of image file to load as texture.
    */
   constructor(url: string, confirm: boolean = true) {
-    super(url, confirm);
+    super(url, false, confirm);
     this.onLoad(
       new TextureLoader().load(
         url,

@@ -97,7 +97,6 @@ class GameComponent<State extends GameComponentState> extends TrackedObject<
 
   update(delta: number) {
     super.update(delta);
-    if (this.constructor.name === "Card") console.log(this.state.owner.get());
 
     if (this.body && !this.bodyFollowsObject) {
       const bodyPos = this.body.position;

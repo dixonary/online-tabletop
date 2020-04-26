@@ -79,7 +79,6 @@ class Input extends BasicObject {
   }
 
   handleMouseDown(event: MouseEvent) {
-    console.log(event.button);
     if (event.button === 0) Input.mouse.pressed = true;
     if (event.button === 1) Input.mouse.secondaryPressed = true;
   }

@@ -10,6 +10,7 @@ import {
   Vector3,
   Matrix4,
 } from "three";
+import StateManager from "../managers/StateManager";
 
 type RegionConstructorData = {
   pos: Pos3;
@@ -53,6 +54,11 @@ class Region extends GameComponent<RegionState> {
     this.helperMesh = this.makeHelperGeometry();
   }
 
+  dispose() {
+    super.dispose();
+    Region.AllRegions.splice(Region.AllRegions.indexOf(this), 1);
+  }
+
   checkContains(p: Pos3) {
     const point = new Vector3(p.x, p.y, p.z);
     const pos = this.state.position.get();
@@ -94,19 +100,27 @@ class Region extends GameComponent<RegionState> {
    * Callback for when an object is picked up in the region.
    * @param objId The object's identifier.
    */
-  objectTaken(objId: string) {}
+  objectTaken(objId: string) {
+    this.event("object take", objId);
+  }
 
   /**
    * Callback for when an object is dropped in the region.
    * @param objId
    */
-  objectDropped(objId: string) {}
+  objectDropped(objId: string) {
+    this.event("object drop", objId);
+  }
 
   /**
    * Callback for when an object is moved out of the region.
    * @param objId
    */
   objectLeft(objId: string) {
+    const obj = StateManager.GetObject(objId);
+    if (!obj) return;
+    obj.state.owner.set(null);
+
     const objects = this.state.objectIds.get();
     const objIdx = objects.indexOf(objId);
     if (objIdx === -1) return;
@@ -120,6 +134,10 @@ class Region extends GameComponent<RegionState> {
    * @param objId The object's identifier.
    */
   objectEntered(objId: string) {
+    const obj = StateManager.GetObject(objId);
+    if (!obj) return;
+    obj.state.owner.set(this.state.owner.get());
+
     const objects = this.state.objectIds.get();
     const objIdx = objects.indexOf(objId);
     if (objIdx !== -1) return;

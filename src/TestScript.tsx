@@ -73,7 +73,7 @@ const deck = new component.PopulatedDeck ({
   faceDown:true
 });
 
-deck.position.setY(TABLE_HEIGHT);
+deck.state.position.set({x:0,y:TABLE_HEIGHT,z:0});
 
 // const endTurnImg = new resource.Image(
 //   "localhost:3000/resources/nextTurn.png"

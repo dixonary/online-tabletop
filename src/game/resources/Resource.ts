@@ -1,13 +1,15 @@
 import { EventHandler } from "../EventHandler";
 import Log from "../Log";
+import LoadingManager from "../managers/LoadingManager";
 
 class Resource {
   loaded: boolean = false;
   value: any = undefined;
   eventHandler: EventHandler = new EventHandler();
   url: string;
+  slowLoader: boolean;
 
-  constructor(url: string, confirm?: boolean) {
+  constructor(url: string, slowLoader: boolean, confirm?: boolean) {
     this.url = url;
     if (confirm) {
       console.warn(
@@ -16,12 +18,16 @@ class Resource {
         this
       );
     }
+
+    if (slowLoader) LoadingManager.AddResource(url);
+    this.slowLoader = slowLoader;
   }
 
   onLoad(value: any) {
     this.loaded = true;
     this.value = value;
     this.event("load", value);
+    if (this.slowLoader) LoadingManager.DoneResource(this.url);
   }
 
   /* Wrap the EventHandler functions */

@@ -28,7 +28,9 @@ import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 
+import LoadingManager from "./managers/LoadingManager";
 import PlayerManager from "./managers/PlayerManager";
+import Tooltip from "./managers/Tooltip";
 import Authority from "./managers/Authority";
 import CameraControls from "./CameraControls";
 import BasicObject from "./BasicObject";
@@ -40,7 +42,8 @@ import * as resource from "./resource";
 import * as controller from "./controller";
 import * as component from "./component";
 import * as struct from "./StateStructures";
-import Tooltip from "./managers/Tooltip";
+import * as THREE from "three";
+import OverlayManager from "./managers/OverlayManager";
 
 export enum GameMode {
   HOST,
@@ -100,14 +103,16 @@ class Game {
     this.outlinePass.edgeStrength = 3;
     this.outlinePass.edgeGlow = 0;
     this.outlinePass.edgeThickness = 1;
-    // this.composer.addPass(this.outlinePass);
+    this.composer.addPass(this.outlinePass);
 
     // Initialize global managers
     Log.Initialize(root);
     Input.Initialize(root);
     Tooltip.Initialize(root);
+    OverlayManager.Initialize(root);
     NetworkClient.Initialize();
     PlayerManager.Initialize();
+    LoadingManager.Initialize();
     Authority.Initialize();
     Physics.Initialize();
 
@@ -161,10 +166,12 @@ class Game {
   preGameSetup() {
     // Re-export the toolbox to the window!
     (window as any).game = this;
+    (window as any).scene = this.scene;
     (window as any).resource = resource;
     (window as any).component = component;
     (window as any).controller = controller;
     (window as any).struct = struct;
+    (window as any).THREE = THREE;
 
     // We set this local so that state changes made before setup is complete
     // are not propagated to the network.
@@ -233,11 +240,14 @@ class Game {
   update() {
     // Run the update step on any scene objects which implement the update interface
     const delta = this.clock.getDelta();
+
     this.scene.traverse((o: any) => {
       if (o.update) o.update(delta);
     });
 
-    Physics.world.step(1 / 120, delta);
+    // Pause while loading slow resources so that physics doesn't go funny
+    // when the geometries pop in!
+    if (LoadingManager.ready) Physics.world.step(1 / 120, delta);
 
     requestAnimationFrame(this.update.bind(this));
     this.render();

@@ -54,7 +54,7 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
     obj.state.owner.set(this.state.owner.get());
 
     for (let region of Region.AllRegions) {
-      if (region.has(objId)) region.objectDropped(objId);
+      if (region.has(objId)) region.objectTaken(objId);
     }
 
     obj.event("grab", this.identifier);
@@ -82,7 +82,7 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
 
     for (let region of Region.AllRegions) {
       if (region.has(grabbed)) {
-        region.objectTaken(grabbed);
+        region.objectDropped(grabbed);
         break;
       }
     }
@@ -95,7 +95,9 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
    * @param id The new id to outline.
    */
   updateOutline(id: string | null) {
-    const selection = Game.instance.outlinePass.selectedObjects;
+    // There was a weird bug that arose when the selectedObjects array
+    // was altered directly. This is much safer!
+    const selection = new Set(Game.instance.outlinePass.selectedObjects);
 
     // Remove old highlighted object
     const highlight = this.state.highlightedObject.get();
@@ -103,9 +105,7 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
       const old = StateManager.GetObject(highlight);
       if (old instanceof GameComponent) {
         const oldMain = old.mainMesh;
-        if (oldMain) {
-          selection.splice(selection.indexOf(oldMain), 1);
-        }
+        if (oldMain) selection.delete(oldMain);
       }
     }
 
@@ -114,11 +114,11 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
       const newObj = StateManager.GetObject(id);
       if (newObj instanceof GameComponent) {
         const newMain = newObj.mainMesh;
-        if (newMain) {
-          selection.push(newMain);
-        }
+        if (newMain) selection.add(newMain);
       }
     }
+
+    Game.instance.outlinePass.selectedObjects = Array.from(selection);
   }
 
   createGeometry() {

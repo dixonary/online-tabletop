@@ -103,6 +103,7 @@ class StateManager {
    * @param propagate Propagate the changes to the controlling object.
    */
   static UpdateState(id: string, property: string, newState: any) {
+    // console.log(`Update: ${id}.${property} = ${newState}`);
     StateManager.states.get(id)?.updateState(property, newState);
   }
 

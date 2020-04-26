@@ -9,7 +9,7 @@ class STL extends Resource {
   static Cache: Map<string, STL> = new Map();
 
   constructor(url: string, confirm: boolean = true) {
-    super(url, confirm);
+    super(url, true, confirm);
     new STLLoader().load(
       url,
       this.onLoad.bind(this),
