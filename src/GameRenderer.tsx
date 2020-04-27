@@ -1,17 +1,8 @@
 import { useRef, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import Game, { GameMode } from "./game/Game";
+import Game from "./game/Game";
 import React from "react";
 
-const GameRenderer = ({
-  mode,
-  sceneCode,
-}: {
-  mode: GameMode;
-  sceneCode?: string;
-}) => {
-  const { roomCode } = useParams();
-
+const GameRenderer = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
 
@@ -21,7 +12,7 @@ const GameRenderer = ({
     if (!root) return;
 
     const createGame = () => {
-      gameRef.current = new Game(root, mode);
+      gameRef.current = new Game(root);
     };
 
     const destroyGame = () => {
@@ -31,25 +22,7 @@ const GameRenderer = ({
 
     createGame();
     return destroyGame;
-  }, [mode]);
-
-  // When the scene changes, run this one
-  useEffect(() => {
-    if (!gameRef.current) return;
-
-    const loadGame = () => {
-      const game = gameRef.current!;
-      if (mode === GameMode.JOIN) game.joinRoom(roomCode!);
-      else if (mode === GameMode.HOST) game.hostRoom(sceneCode!);
-    };
-    const unloadGame = () => {
-      const game = gameRef.current;
-      if (game) game.unloadScene();
-    };
-
-    loadGame();
-    return unloadGame;
-  }, [roomCode, sceneCode, mode, gameRef]);
+  }, []);
 
   return <div ref={rootRef} className="gamePreview" id="game-target"></div>;
 };

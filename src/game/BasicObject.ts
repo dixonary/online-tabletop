@@ -26,18 +26,9 @@ class BasicObject extends Group {
     this.events.event("update", delta);
   }
 
-  /**
-   * NOTE: Don't call this directly! Use requestKill() instead, which will
-   * propagate the changes across the network.
-   * Destroy the object.
-   */
-  kill() {
-    this.dispose();
-    Game.instance.scene.remove(this);
-  }
-
   dispose() {
     this.events.event("dispose");
+    Game.instance.scene.remove(this);
   }
 
   /* Wrap the EventHandler functions */

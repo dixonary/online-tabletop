@@ -15,14 +15,13 @@ import { ResizeToFit } from "../GeometryTools";
 import GameComponent, { GameComponentState } from "./GameComponent";
 import StateManager from "../managers/StateManager";
 import Grabber from "./Grabber";
-import Card, { AbstractCardState } from "./Card";
+import Card, { AbstractCardData } from "./Card";
 import Authority from "../managers/Authority";
 import Region from "./Region";
-import NetworkClient, { StateMode } from "../managers/NetworkClient";
-import TrackedObject from "../TrackedObject";
+import { Pos3 } from "../StateStructures";
 
 type DeckState = GameComponentState & {
-  cards: AbstractCardState[];
+  cards: AbstractCardData[];
   faceDown: boolean;
 };
 
@@ -36,31 +35,33 @@ class Deck extends GameComponent<DeckState> {
   constructor({
     cards,
     faceDown,
+    pos,
   }: {
-    cards: AbstractCardState[];
+    cards: AbstractCardData[];
     faceDown: boolean;
+    pos: Pos3;
   }) {
     super({
       owner: null,
       selectable: true,
       grabbable: false,
       grabber: null,
-      position: { x: 0, y: 0, z: 0 },
+      pos: pos ?? { x: 0, y: 0, z: 0 },
       cards,
       faceDown,
-      quaternion: { x: 0, y: 0, z: 0, w: 0 },
+      quat: { x: 0, y: 0, z: 0, w: 0 },
     });
 
     this.pile = this.makePile();
     this.add(this.pile);
 
     this.region = new Region({
-      pos: this.state.position.get(),
+      pos: this.state.pos.get(),
       dim: { width: Card.width + 0.01, height: 0, depth: Card.height + 0.01 },
     });
 
-    this.state.position.addHook(({ x, y, z }) => {
-      this.region.state.position.set({ x, y, z }, false);
+    this.state.pos.addHook(({ x, y, z }) => {
+      this.region.state.pos.set({ x, y, z }, false);
     });
 
     this.region.events.on("object enter", (objId) => {
@@ -70,6 +71,12 @@ class Deck extends GameComponent<DeckState> {
     this.region.events.on("object drop", (objId) => {
       console.log("drop");
       Authority.Do(this, this.tryInsert, objId);
+    });
+
+    // Update the tooltip to match the current deck size
+    this.tooltipText = `Deck(${cards.length})`;
+    this.state.cards.addHook((newCards) => {
+      this.tooltipText = `Deck (${newCards.length})`;
     });
 
     // Update the rendering to match the data
@@ -92,17 +99,22 @@ class Deck extends GameComponent<DeckState> {
     if (!Authority.RequireAuthority()) return;
     const card = StateManager.GetObject(cardId);
     if (!card || !(card instanceof Card)) return;
-    this.insert(cardId, card);
-  }
-
-  insert(cardId: string, card: Card) {
-    const abstract = card.getAbstract();
-    const cards = this.state.cards.get();
-    const randomPos = Math.floor(Math.random() * cards.length);
-    cards.splice(randomPos, 0, abstract);
-    this.state.cards.set(cards);
+    this.insert(card.getAbstract());
 
     card.destroy();
+  }
+
+  /**
+   * Insert a card into a deck. Replace this function to modify the
+   * functionality. By default, the card will be inserted in a random place, and
+   * change its facing direction to match the deck.
+   * @param cardData The abstract card to insert.
+   */
+  insert(cardData: AbstractCardData) {
+    const cards = this.state.cards.get();
+    const randomPos = Math.floor(Math.random() * cards.length);
+    cards.splice(randomPos, 0, cardData);
+    this.state.cards.set(cards);
   }
 
   /**
@@ -220,7 +232,7 @@ class Deck extends GameComponent<DeckState> {
    * Match the rendering to the internal state.
    * @param cards The new abstract state of the pile.
    */
-  updatePileVisual(cards: AbstractCardState[]) {
+  updatePileVisual(cards: AbstractCardData[]) {
     if (cards.length > 0) {
       this.pile.visible = true;
 
@@ -238,7 +250,8 @@ class Deck extends GameComponent<DeckState> {
     this.scale.y = cards.length;
   }
 
-  kill() {
+  dispose() {
+    super.dispose();
     (this.pile.material as Material[]).forEach((m) => m.dispose());
     this.pile.geometry?.dispose();
   }
@@ -250,13 +263,15 @@ class PopulatedDeck extends Deck {
     cardBack,
     distribution,
     faceDown,
+    pos,
   }: {
     cardFronts: TextureList;
     cardBack: Texture;
     faceDown: boolean;
     distribution?: any;
+    pos: Pos3;
   }) {
-    const cards: AbstractCardState[] = [];
+    const cards: AbstractCardData[] = [];
     Object.entries(distribution).forEach(([name, amt]: [string, any]) => {
       for (let i = 0; i < amt; i++) {
         cards.push({
@@ -267,7 +282,7 @@ class PopulatedDeck extends Deck {
       }
     });
     Shuffle(cards);
-    super({ cards, faceDown });
+    super({ cards, faceDown, pos });
   }
 }
 

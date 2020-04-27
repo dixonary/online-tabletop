@@ -15,18 +15,16 @@ import * as resource from "../resource";
 import { Texture } from "../resource";
 import { ResizeToFit } from "../GeometryTools";
 import { Pos3, Quat } from "../StateStructures";
-import Physics from "../managers/Physics";
 import * as CANNON from "cannon";
 import PlayerManager from "../managers/PlayerManager";
 
-export type CardState = AbstractCardState & PhysicalCardState;
+export type CardState = AbstractCardData & PhysicalCardState;
 
 export type PhysicalCardState = GameComponentState & {
   faceDown: boolean;
-  secret: boolean;
 };
 
-export type AbstractCardState = {
+export type AbstractCardData = {
   backTexture: string;
   frontTexture: string;
   name: string;
@@ -46,6 +44,8 @@ class Card extends GameComponent<CardState> {
   frontFaces: Face3[];
   backFaces: Face3[];
 
+  secret: boolean;
+
   constructor({
     frontTexture,
     backTexture,
@@ -53,15 +53,10 @@ class Card extends GameComponent<CardState> {
     faceDown,
     initialPos,
     initialQuat,
-    secret,
-  }: {
-    frontTexture: string;
-    backTexture: string;
-    name: string;
+  }: AbstractCardData & {
     faceDown: boolean;
     initialPos?: Pos3;
     initialQuat?: Quat;
-    secret?: boolean;
   }) {
     const faceQuat = new Quaternion().setFromAxisAngle(
       new Vector3(0, 0, 1),
@@ -75,8 +70,8 @@ class Card extends GameComponent<CardState> {
     };
 
     super({
-      position: initialPos ?? { x: 0, y: 0, z: 0 },
-      quaternion: startingQuat,
+      pos: initialPos ?? { x: 0, y: 0, z: 0 },
+      quat: startingQuat,
       owner: null,
       frontTexture,
       backTexture,
@@ -85,61 +80,75 @@ class Card extends GameComponent<CardState> {
       grabber: null,
       grabbable: true,
       faceDown,
-      secret: secret ?? false,
     });
 
     this.frontFaces = [];
     this.backFaces = [];
+    this.secret = true;
 
-    this.tooltipText = name;
+    this.setBody(this.createBody());
 
-    this.quaternion.setFromAxisAngle(
-      new Vector3(0, 0, 1),
-      faceDown ? 0 : Math.PI
-    );
-
-    this.body = this.createBody();
-    Physics.world.addBody(this.body);
-
-    this.state.faceDown.addHook((newFace: boolean) => {
-      const q = this.state.quaternion.get();
-      const shortAxisFlip = new Quaternion().setFromAxisAngle(
-        new Vector3(0, 0, 1),
-        Math.PI
-      );
-      const quat = new Quaternion(q.x, q.y, q.z, q.w);
-      quat.multiply(shortAxisFlip);
-      this.state.quaternion.set(
-        { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
-        false
-      );
-    });
+    this.entity = this.makeVisual();
 
     this.events.on("held scroll", (grabberId) => {
       this.state.faceDown.set(!this.state.faceDown.get());
     });
 
-    this.events.on("release", (grabberId) => {
-      if (!this.state.faceDown.get() && this.state.owner.get() === null) {
-        this.state.secret.set(false);
+    this.state.addComputedProperty(
+      ["faceDown", "owner"],
+      ({ faceDown, owner }) => {
+        const isOwner = owner === PlayerManager.GetUID();
+        const noOwner = owner === null;
+
+        const secret = faceDown || (!noOwner && !isOwner);
+
+        const newMat = secret && !isOwner ? 0 : 1;
+
+        this.frontFaces.forEach((f) => {
+          f.materialIndex = newMat;
+        });
+
+        (this.entity.geometry as Geometry).groupsNeedUpdate = true;
+
+        if (secret) {
+          this.tooltipText = `Card`;
+        } else {
+          this.tooltipText = `Card (${this.state.name.get()})`;
+        }
+
+        this.secret = secret;
       }
-    });
+    );
 
-    this.entity = this.makeVisual();
+    this.state.addComputedProperty(
+      ["faceDown", "quat"],
+      ({ faceDown, quat }) => {
+        const shortAxisFlip = new Quaternion().setFromAxisAngle(
+          new Vector3(0, 0, 1),
+          faceDown ? 0 : Math.PI
+        );
+        const { x, y, z, w } = quat;
 
-    this.state.secret.addHook((newSecret: boolean) => {
-      console.log(newSecret);
-      const newMat =
-        newSecret && this.state.owner.get() !== PlayerManager.GetClientId()
-          ? 0
-          : 1;
+        const q = this.smoothMovement ? "smoothQuaternion" : "quaternion";
 
-      this.frontFaces.forEach((f) => {
-        f.materialIndex = newMat;
-      });
+        if (!this[q] && q === "smoothQuaternion") {
+          this[q] = new Quaternion();
+        }
 
-      (this.entity.geometry as Geometry).groupsNeedUpdate = true;
-    });
+        const quaternion = this[q]!;
+        quaternion.set(x, y, z, w);
+        quaternion.multiply(shortAxisFlip);
+
+        this.body?.quaternion.set(
+          quaternion.x,
+          quaternion.y,
+          quaternion.z,
+          quaternion.w
+        );
+        this.body?.velocity.set(0, 0, 0);
+      }
+    );
+
     this.state.frontTexture.addHook((newFront: string) => {
       const mats = this.entity.material as MeshBasicMaterial[];
       mats[1].map = resource.Texture.get(newFront).value();
@@ -150,10 +159,13 @@ class Card extends GameComponent<CardState> {
     });
   }
 
+  // Override the default behaviour of quat -> quaternion.
+  updateQuaternion() {}
+
   /**
    * Get the abstract version of this card.
    */
-  getAbstract(): AbstractCardState {
+  getAbstract(): AbstractCardData {
     return {
       backTexture: this.state.backTexture.get(),
       frontTexture: this.state.frontTexture.get(),
@@ -170,10 +182,10 @@ class Card extends GameComponent<CardState> {
       );
     body.addShape(Card.bodyShape);
 
-    const pos = this.state.position.get();
+    const pos = this.smoothPosition ?? this.position;
     body.position.set(pos.x, pos.y, pos.z);
-    const quat = this.state.quaternion.get();
-    body.quaternion.set(quat.x, quat.y, quat.z, quat.w);
+    const { x, y, z, w } = this.smoothQuaternion ?? this.quaternion;
+    body.quaternion.set(x, y, z, w);
 
     return body;
   }
@@ -261,11 +273,12 @@ class Card extends GameComponent<CardState> {
   }
 
   dispose() {
+    super.dispose();
     (this.entity.material as Material[]).forEach((m) => m.dispose());
     this.entity.geometry?.dispose();
   }
 
-  updateTextures(cardData: AbstractCardState) {
+  updateTextures(cardData: AbstractCardData) {
     const mats = this.entity.material as MeshBasicMaterial[];
     mats[1].map = Texture.get(cardData.frontTexture).value;
     mats[2].map = Texture.get(cardData.backTexture).value;

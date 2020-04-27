@@ -1,34 +1,40 @@
 import TrackedObject from "../TrackedObject";
-import NetworkClient from "./NetworkClient";
+import Network, { AuthoritativeAction } from "./Network";
 import StateManager from "./StateManager";
-import Log from "../Log";
+import Log from "./Log";
+import Manager from "./Manager";
 
 /**
  * A class which handles the authoritative firing of functions.
  */
-class Authority {
+class Authority extends Manager {
   static IsAuthoritative: boolean = false;
 
   static Initialize() {
-    NetworkClient.ReceiveAuthoritativeCall = Authority.Receive;
+    super.Initialize();
+    Network.ReceiveAuthoritativeCall = Authority.Receive;
   }
 
   /**
    * We are the authority, and the network has just handed us an authoritative
    * call to make.
    */
-  static Receive<K>(objectId: string, functionName: string, params: K) {
+  static Receive<K>({
+    identifier,
+    functionName,
+    param,
+  }: AuthoritativeAction<K>) {
     // Log.Info(`${objectId} :: ! ${functionName}(${params ?? ""})`);
-    const obj = StateManager.GetObject(objectId);
+    const obj = StateManager.GetObject(identifier);
     if (!obj) {
       Log.Warn(
         `An authoritative function was called on object with with` +
-          ` identifier ${objectId}, but no such object was found.`
+          ` identifier ${identifier}, but no such object was found.`
       );
       return;
     }
     Authority.IsAuthoritative = true;
-    (obj as any)[functionName](params);
+    (obj as any)[functionName](param);
     Authority.IsAuthoritative = false;
   }
 
@@ -42,7 +48,11 @@ class Authority {
    * -   after some event is fired.
    */
   static Do<K>(object: TrackedObject<any>, func: (data: K) => any, data?: K) {
-    NetworkClient.SendAuthoritativeCall(object.identifier, func.name, data);
+    Network.SendAuthoritativeCall({
+      identifier: object.identifier,
+      functionName: func.name,
+      param: data,
+    });
   }
 
   static RequireAuthority() {

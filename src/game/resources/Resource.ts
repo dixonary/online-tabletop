@@ -1,5 +1,5 @@
 import { EventHandler } from "../EventHandler";
-import Log from "../Log";
+import Log from "../managers/Log";
 import LoadingManager from "../managers/LoadingManager";
 
 class Resource {

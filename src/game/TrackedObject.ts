@@ -1,6 +1,6 @@
 import StateManager, { Stateful, ObjectState } from "./managers/StateManager";
 import IDManager from "./managers/IDManager";
-import NetworkClient from "./managers/NetworkClient";
+import Network from "./managers/Network";
 import BasicObject from "./BasicObject";
 import Authority from "./managers/Authority";
 
@@ -19,7 +19,9 @@ class TrackedObject<State extends {}> extends BasicObject {
   constructor(initialState: State) {
     super();
 
-    const id = IDManager.getNext(this);
+    // Initialize this with the initial state so we can construct more
+    // complex identifiers than just member vars.
+    const id = IDManager.GetNext(this.getIdentifierToken(initialState));
     this.identifier = id;
 
     // We have to cast this. The StateMachine sets the hooked values
@@ -31,12 +33,21 @@ class TrackedObject<State extends {}> extends BasicObject {
     console.log(this.constructor.name, this.identifier);
   }
 
+  getIdentifierToken(initialState: State) {
+    return this.constructor.name;
+  }
+
   /**
    * Create an object. Only call this inside of an Authoritatively called function!
    */
   static Create(...params: any[]) {
-    NetworkClient.SendCreation(this.prototype.constructor.name, ...params);
-    return new (this.prototype.constructor as any)(...params);
+    const obj = new (this.prototype.constructor as any)(...params);
+    Network.SendCreation({
+      identifier: obj.identifier,
+      className: this.prototype.constructor.name,
+      params: params,
+    });
+    return obj;
   }
 
   /**
@@ -44,8 +55,8 @@ class TrackedObject<State extends {}> extends BasicObject {
    */
   destroy() {
     if (!Authority.RequireAuthority()) return;
-    NetworkClient.SendDestruction(this.identifier);
-    StateManager.Destroy(this.identifier);
+    Network.SendDestruction({ identifier: this.identifier });
+    StateManager.Destroy({ identifier: this.identifier });
   }
 }
 

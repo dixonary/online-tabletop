@@ -10,16 +10,16 @@ import {
   LinearFilter,
   BoxGeometry,
   BackSide,
-  MeshStandardMaterial,
   Material,
   Vector2,
   Color,
   Clock,
+  MeshPhongMaterial,
 } from "three";
 import { AutoUV, ApplyFaceMaterials } from "./GeometryTools";
 import { TextureList, Texture } from "./resource";
-import Log from "./Log";
-import NetworkClient, { StateMode } from "./managers/NetworkClient";
+import Log from "./managers/Log";
+import Network, { StateMode } from "./managers/Network";
 import StateManager from "./managers/StateManager";
 import GrabberManager from "./controllers/GrabberController";
 import Input from "./managers/Input";
@@ -28,6 +28,8 @@ import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 
+import Manager from "./managers/Manager";
+import Overlay from "./managers/Overlay";
 import LoadingManager from "./managers/LoadingManager";
 import PlayerManager from "./managers/PlayerManager";
 import Tooltip from "./managers/Tooltip";
@@ -43,7 +45,8 @@ import * as controller from "./controller";
 import * as component from "./component";
 import * as struct from "./StateStructures";
 import * as THREE from "three";
-import OverlayManager from "./managers/OverlayManager";
+import Trash from "./managers/Trash";
+import JoinRequests from "./managers/JoinRequests";
 
 export enum GameMode {
   HOST,
@@ -60,25 +63,23 @@ class Game {
   scene: Scene;
   camera: PerspectiveCamera;
   renderer: WebGLRenderer;
-  cameraControls: CameraControls;
-
   composer: EffectComposer;
   outlinePass: OutlinePass;
   renderPass: RenderPass;
 
+  managers: typeof Manager[];
+
   root: HTMLElement;
   room: Room;
-  mode: GameMode;
 
   clock: Clock;
 
   // We define this so that it can be disposed of
   private resizeHandler = this.handleResize.bind(this);
 
-  constructor(root: HTMLElement, mode: GameMode) {
+  constructor(root: HTMLElement) {
     Game.instance = this;
     this.root = root;
-    this.mode = mode;
 
     this.scene = new Scene();
     this.renderer = this.initializeRenderer();
@@ -106,17 +107,34 @@ class Game {
     this.composer.addPass(this.outlinePass);
 
     // Initialize global managers
-    Log.Initialize(root);
-    Input.Initialize(root);
-    Tooltip.Initialize(root);
-    OverlayManager.Initialize(root);
-    NetworkClient.Initialize();
-    PlayerManager.Initialize();
-    LoadingManager.Initialize();
-    Authority.Initialize();
-    Physics.Initialize();
 
-    this.cameraControls = new CameraControls(this.camera);
+    const rootedManagers = [Log, Input, Tooltip, Overlay, JoinRequests];
+    rootedManagers.forEach((m) => m.Initialize(root));
+
+    const plainManagers = [
+      Network,
+      PlayerManager,
+      LoadingManager,
+      Authority,
+      Physics,
+      Trash,
+    ];
+    plainManagers.forEach((m) => m.Initialize());
+
+    this.managers = ([] as typeof Manager[]).concat(
+      rootedManagers,
+      plainManagers,
+      []
+    );
+
+    for (let manager of this.managers) {
+      if (!(manager as typeof Manager).Initialized) {
+        Log.Warn(
+          `${(manager as Function).name} was not initialized` +
+            ` before being added to the manager list.`
+        );
+      }
+    }
 
     window.addEventListener("resize", this.resizeHandler);
 
@@ -136,7 +154,7 @@ class Game {
     renderer.setClearColor("#D9C2F0");
     renderer.autoClearColor = false;
     renderer.setSize(0, 0);
-    // renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = true;
     renderer.autoClearColor = false;
     this.root.appendChild(renderer.domElement);
     return renderer;
@@ -149,15 +167,15 @@ class Game {
     return camera;
   }
 
-  hostRoom(sceneCode: string) {
-    Log.Info("Connecting...");
-    NetworkClient.Host(sceneCode);
-  }
+  // hostRoom(sceneCode: string) {
+  //   Log.Info("Connecting...");
+  //   Network.Host(sceneCode);
+  // }
 
-  joinRoom(roomCode: string) {
-    Log.Info("Connecting...");
-    NetworkClient.Join(roomCode);
-  }
+  // joinRoom(roomCode: string) {
+  //   Log.Info("Connecting...");
+  //   Network.Join(roomCode);
+  // }
 
   begin() {
     requestAnimationFrame(this.update.bind(this));
@@ -175,14 +193,15 @@ class Game {
 
     // We set this local so that state changes made before setup is complete
     // are not propagated to the network.
-    NetworkClient.stateMode = StateMode.LOCAL;
+    Network.stateMode = StateMode.LOCAL;
   }
 
   postGameSetup() {
     new GrabberManager();
+    new CameraControls(this.camera);
 
     // Re-enable state propagation.
-    NetworkClient.stateMode = StateMode.GLOBAL;
+    Network.stateMode = StateMode.GLOBAL;
   }
 
   unloadScene() {
@@ -198,7 +217,7 @@ class Game {
 
     // Set the global state controls back to their initial values
     StateManager.Clear();
-    IDManager.reset();
+    IDManager.Reset();
   }
 
   loadScene() {
@@ -244,6 +263,8 @@ class Game {
     this.scene.traverse((o: any) => {
       if (o.update) o.update(delta);
     });
+
+    this.managers.forEach((m) => m.Update(delta));
 
     // Pause while loading slow resources so that physics doesn't go funny
     // when the geometries pop in!
@@ -302,20 +323,22 @@ class Room extends Mesh {
       ["color", "ao", "bump", "disp", "norm", "gloss"]
     );
 
-    const brickMat = new MeshStandardMaterial({ side: BackSide });
+    const brickMat = new MeshPhongMaterial({ side: BackSide });
     brickMat.map = brickTexture.get("color");
-    brickMat.metalnessMap = brickTexture.get("gloss");
+    // brickMat.lightMap = brickTexture.get("gloss");
     brickMat.bumpMap = brickTexture.get("bump");
+    brickMat.bumpScale = 0.5;
+    brickMat.aoMap = brickTexture.get("ao");
     brickMat.aoMapIntensity = 0.5;
 
     const floorTexture = new TextureList(
       (s) => process.env.PUBLIC_URL + `/resources/wood-floor/${s}.jpg`,
       ["color", "refl", "disp", "norm", "gloss"]
     );
-    const floorMat = new MeshStandardMaterial({ side: BackSide });
+    const floorMat = new MeshPhongMaterial({ side: BackSide });
     floorMat.map = floorTexture.get("color");
     floorMat.normalMap = floorTexture.get("norm");
-    floorMat.metalnessMap = floorTexture.get("gloss");
+    // floorMat.lightMap = floorTexture.get("gloss");
 
     this.geometry = geometry;
     this.material = [whiteMat, brickMat, floorMat];

@@ -19,7 +19,7 @@ class HandController extends BasicObject {
       if (!handData) {
         throw new Error("There are more players than seats!");
       }
-      this.hands[p.clientId] = new Hand({ ...handData, clientId: p.clientId });
+      this.hands[p.uid] = new Hand({ ...handData, uid: p.uid });
     });
   }
 }

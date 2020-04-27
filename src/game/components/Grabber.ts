@@ -3,6 +3,7 @@ import { SphereBufferGeometry, MeshBasicMaterial, Mesh } from "three";
 import StateManager from "../managers/StateManager";
 import Game from "../Game";
 import Region from "./Region";
+import Authority from "../managers/Authority";
 
 type GrabberState = {
   visible: boolean;
@@ -19,8 +20,8 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
 
   constructor(clientId: string, hasGeometry: boolean = true) {
     super({
-      position: { x: 0, y: 0, z: 0 },
-      quaternion: { x: 0, y: 0, z: 0, w: 0 },
+      pos: { x: 0, y: 0, z: 0 },
+      quat: { x: 0, y: 0, z: 0, w: 0 },
       owner: clientId,
       grabber: null,
       selectable: false,
@@ -41,7 +42,12 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
     this.state.highlightedObject.addHook((id) => this.updateOutline(id));
   }
 
+  getIdentifierToken(initialState: GrabberState & GameComponentState) {
+    return `Grabber_${initialState.owner}`;
+  }
+
   grab(objId: string) {
+    if (!Authority.RequireAuthority()) return;
     // We must be highlighting something
     const obj = StateManager.GetObject<GameComponent<GameComponentState>>(
       objId
@@ -51,16 +57,20 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
 
     this.state.grabbedObject.set(objId);
     obj.state.grabber.set(this.identifier);
-    obj.state.owner.set(this.state.owner.get());
 
     for (let region of Region.AllRegions) {
       if (region.has(objId)) region.objectTaken(objId);
     }
 
     obj.event("grab", this.identifier);
+
+    for (let region of Region.AllRegions) {
+      region.state.visible.set(true);
+    }
   }
 
   release() {
+    if (!Authority.RequireAuthority()) return;
     const grabbed = this.state.grabbedObject.get();
     if (!grabbed) return;
     const obj = StateManager.GetObject<GameComponent<GameComponentState>>(
@@ -69,15 +79,6 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
     if (obj.state.grabber.get() !== this.identifier) return;
     this.state.grabbedObject.set(null);
 
-    // Check if the object was dropped into a region
-    let newOwner = null;
-    for (let region of Region.AllRegions) {
-      if (region.has(grabbed)) {
-        newOwner = region.state.owner.get();
-        break;
-      }
-    }
-    obj.state.owner.set(newOwner);
     obj.state.grabber.set(null);
 
     for (let region of Region.AllRegions) {
@@ -85,6 +86,10 @@ class Grabber extends GameComponent<GrabberState & GameComponentState> {
         region.objectDropped(grabbed);
         break;
       }
+    }
+
+    for (let region of Region.AllRegions) {
+      region.state.visible.set(false);
     }
 
     obj.event("release", this.identifier);

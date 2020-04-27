@@ -70,10 +70,9 @@ const deck = new component.PopulatedDeck ({
     countess:1,
     princess:1
   },
-  faceDown:true
+  faceDown:true,
+  pos: {x:0, y:TABLE_HEIGHT, z:0.1}
 });
-
-deck.state.position.set({x:0,y:TABLE_HEIGHT,z:0});
 
 // const endTurnImg = new resource.Image(
 //   "localhost:3000/resources/nextTurn.png"

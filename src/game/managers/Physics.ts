@@ -1,16 +1,26 @@
 import { World, SAPBroadphase } from "cannon";
-import Log from "../Log";
+import Log from "./Log";
+import Manager from "./Manager";
 
-class Physics {
+class Physics extends Manager {
   static world: World;
 
+  static TPS: number = 120;
+
   static Initialize() {
+    super.Initialize();
     Physics.world = new World();
     Physics.world.broadphase = new SAPBroadphase(Physics.world);
     Physics.world.gravity.set(0, -5, 0);
   }
 
-  static Clear() {
+  static Update(delta: number) {
+    super.Update(delta);
+    Physics.world.step(1 / Physics.TPS, delta);
+  }
+
+  static Dispose() {
+    super.Dispose();
     Log.Warn("TODO: implement scene cleanup");
   }
 }

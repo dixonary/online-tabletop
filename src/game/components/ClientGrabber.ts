@@ -30,8 +30,6 @@ class ClientGrabber extends Grabber {
 
     this.smoothMovement = false;
 
-    Game.instance.scene.add(this);
-
     ClientGrabber.instance = this;
   }
 
@@ -54,7 +52,7 @@ class ClientGrabber extends Grabber {
 
     // Update tooltip
     Tooltip.SetPosition(Input.mouse.positionRaw);
-    Tooltip.Set(this.lastHighlighted?.name ?? null);
+    Tooltip.Set(this.lastHighlighted?.tooltipText ?? null);
 
     this.updateGrabbedObject();
   }
@@ -70,10 +68,10 @@ class ClientGrabber extends Grabber {
       grabbed
     )!;
 
-    const pos = this.state.position.get();
+    const pos = this.state.pos.get();
 
     // We don't tell the network, since they'll do this update themselves.
-    obj.state.position.set(
+    obj.state.pos.set(
       { x: pos.x, y: pos.y + Grabber.FloatHeight, z: pos.z },
       true
     );
@@ -126,7 +124,7 @@ class ClientGrabber extends Grabber {
       if (oldLoc === undefined || newLoc.distanceTo(oldLoc) > 0.001) {
         // Move the pointer
         let loc = intersects[0].point;
-        this.state.position.set({ x: loc.x, y: loc.y, z: loc.z });
+        this.state.pos.set({ x: loc.x, y: loc.y, z: loc.z });
         this.intersect = intersect;
       }
 

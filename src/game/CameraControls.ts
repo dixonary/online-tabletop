@@ -3,6 +3,7 @@ import BasicObject from "./BasicObject";
 import Input from "./managers/Input";
 import { ClientSeat } from "./components/Seat";
 import ClientGrabber from "./components/ClientGrabber";
+import Log from "./managers/Log";
 
 class CameraControls extends BasicObject {
   private camera: PerspectiveCamera;
@@ -31,9 +32,9 @@ class CameraControls extends BasicObject {
     window.addEventListener("keydown", this.resetPositionCallback);
   }
 
-  kill() {
+  dispose() {
     window.removeEventListener("keydown", this.resetPositionCallback);
-    super.kill();
+    super.dispose();
   }
 
   resetPosition(e: Event) {
@@ -65,6 +66,10 @@ class CameraControls extends BasicObject {
     super.update(delta);
 
     const coll = this.computeRay();
+
+    if (!coll) {
+      Log.Warn("No plane!");
+    }
 
     if (
       Input.mouse.justPressed &&

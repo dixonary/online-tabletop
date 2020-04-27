@@ -4,20 +4,21 @@ import Game from "../Game";
 
 class Seat extends GameComponent<GameComponentState> {
   clientId: string;
-  constructor(position: Pos3, clientId: string) {
+  constructor(pos: Pos3, clientId: string) {
     super({
-      position,
+      pos,
       owner: clientId,
       selectable: false,
       grabber: null,
       grabbable: false,
-      quaternion: { x: 0, y: 0, z: 0, w: 0 },
+      quat: { x: 0, y: 0, z: 0, w: 0 },
     });
     this.clientId = clientId;
-    this.setupGeometry();
   }
 
-  setupGeometry() {}
+  getIdentifierToken(initialState: GameComponentState) {
+    return `Seat_${initialState.owner}`;
+  }
 }
 
 class ClientSeat extends Seat {
@@ -25,11 +26,11 @@ class ClientSeat extends Seat {
 
   center: Pos3;
 
-  constructor(position: Pos3, center: Pos3, clientId: string) {
-    super(position, clientId);
+  constructor(pos: Pos3, center: Pos3, clientId: string) {
+    super(pos, clientId);
 
     // Position the camera
-    Game.instance.camera.position.set(position.x, position.y, position.z);
+    Game.instance.camera.position.set(pos.x, pos.y, pos.z);
     Game.instance.camera.lookAt(center.x, center.y, center.z);
 
     this.center = center;

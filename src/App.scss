@@ -91,9 +91,18 @@ main {
   font-size: 0.8rem;
   padding: 0.25rem;
   border-radius: 0.25rem;
-  opacity: 1;
+  display: block;
 }
 
 .hover-tooltip.hidden {
-  opacity: 0;
+  display: none;
+}
+
+.overlay,
+.join-requests {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
 }

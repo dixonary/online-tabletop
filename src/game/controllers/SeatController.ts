@@ -7,14 +7,14 @@ import { Seat, ClientSeat } from "../components/Seat";
  * A device for setting up players' seats.
  */
 class SeatController extends BasicObject {
-  seats: { [clientId: string]: Seat };
+  seats: { [uid: string]: Seat };
 
   constructor(seats: { position: Pos3 }[], center: Pos3) {
     super();
     const clients = PlayerManager.GetPlayers();
 
     console.log(clients);
-    console.log(PlayerManager.GetClientId());
+    console.log(PlayerManager.GetUID());
 
     this.seats = {};
     clients.forEach((p, i) => {
@@ -22,10 +22,10 @@ class SeatController extends BasicObject {
       if (!seatData) {
         throw new Error("There are more players than seats!");
       }
-      this.seats[p.clientId] =
-        p.clientId === PlayerManager.GetClientId()
-          ? new ClientSeat(seatData.position, center, p.clientId)
-          : new Seat(seatData.position, p.clientId);
+      this.seats[p.uid] =
+        p.uid === PlayerManager.GetUID()
+          ? new ClientSeat(seatData.position, center, p.uid)
+          : new Seat(seatData.position, p.uid);
     });
   }
 }

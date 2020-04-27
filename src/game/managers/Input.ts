@@ -1,5 +1,5 @@
 import { Vector2 } from "three";
-import BasicObject from "../BasicObject";
+import Manager from "./Manager";
 
 export type MouseData = {
   position: Vector2;
@@ -17,7 +17,7 @@ export type MouseData = {
   scrollDelta: number;
 };
 
-class Input extends BasicObject {
+class Input extends Manager {
   static mouse: MouseData = {
     position: new Vector2(),
     positionRaw: new Vector2(),
@@ -31,99 +31,111 @@ class Input extends BasicObject {
     scrollDelta: 0,
   };
 
-  private pressedLast: boolean = false;
-  private secondaryPressedLast: boolean = false;
-  private scrollStarted: number | null = null;
-  private scrollStartedLast: number | null = null;
-  private scrollUnit: number = Number.MAX_SAFE_INTEGER;
+  static _pressedLast: boolean = false;
+  static _secondaryPressedLast: boolean = false;
+  static _scrollStarted: number | null = null;
+  static _scrollStartedLast: number | null = null;
+  static _scrollIntraFrame: number = 0;
+  static _scrollUnit: number = Number.MAX_SAFE_INTEGER;
+  static _root: HTMLElement;
   // private scrollDeltaLast: number = 0;
 
-  private scrollIntraFrame: number = 0;
-
-  private root: HTMLElement;
-
-  constructor(root: HTMLElement) {
-    super();
-
-    this.root = root;
-
-    window.addEventListener(
-      "mousemove",
-      this.handleMouseMove.bind(this),
-      false
-    );
-    window.addEventListener(
-      "mousedown",
-      this.handleMouseDown.bind(this),
-      false
-    );
-    window.addEventListener("mouseup", this.handleMouseUp.bind(this), false);
-    window.addEventListener("wheel", this.handleScroll.bind(this), false);
-  }
-
   static Initialize(root: HTMLElement) {
-    new Input(root);
+    super.Initialize();
+    Input._root = root;
+    window.addEventListener("mousemove", Input._HandleMouseMove, false);
+    window.addEventListener("mousedown", Input._HandleMouseDown, false);
+    window.addEventListener("mouseup", Input._HandleMouseUp, false);
+    window.addEventListener("wheel", Input._HandleScroll, false);
   }
 
-  handleMouseMove(event: MouseEvent) {
-    const root = this.root;
+  static Dispose() {
+    super.Dispose();
+    window.removeEventListener("mousemove", Input._HandleMouseMove);
+    window.removeEventListener("mousedown", Input._HandleMouseDown);
+    window.removeEventListener("mouseup", Input._HandleMouseUp);
+    window.addEventListener("wheel", Input._HandleScroll);
+  }
+
+  static _HandleMouseMove(event: MouseEvent) {
     const mouse = Input.mouse;
-    const bound = root.getBoundingClientRect();
+    const bound = Input._root.getBoundingClientRect();
     const x = event.clientX - bound.left;
     const y = event.clientY - bound.top;
     mouse.position.set(
-      (x / root.clientWidth) * 2 - 1,
-      -(y / root.clientHeight) * 2 + 1
+      (x / Input._root.clientWidth) * 2 - 1,
+      -(y / Input._root.clientHeight) * 2 + 1
     );
     mouse.positionRaw.set(x, y);
   }
 
-  handleMouseDown(event: MouseEvent) {
+  static _HandleMouseDown(event: MouseEvent) {
+    if (
+      Input.mouse.positionRaw.x < 0 ||
+      Input.mouse.positionRaw.x > Input._root.clientWidth ||
+      Input.mouse.positionRaw.y < 0 ||
+      Input.mouse.positionRaw.y > Input._root.clientHeight
+    )
+      return;
     if (event.button === 0) Input.mouse.pressed = true;
     if (event.button === 1) Input.mouse.secondaryPressed = true;
   }
-  handleMouseUp(event: MouseEvent) {
+  static _HandleMouseUp(event: MouseEvent) {
+    if (
+      Input.mouse.positionRaw.x < 0 ||
+      Input.mouse.positionRaw.x > Input._root.clientWidth ||
+      Input.mouse.positionRaw.y < 0 ||
+      Input.mouse.positionRaw.y > Input._root.clientHeight
+    )
+      return;
     if (event.button === 0) Input.mouse.pressed = false;
     if (event.button === 1) Input.mouse.secondaryPressed = false;
   }
 
-  handleScroll(event: WheelEvent) {
-    Input.mouse.justScrolled = true;
-    this.scrollUnit = Math.min(Math.abs(event.deltaY), this.scrollUnit);
-    // console.log(this.scrollUnit);
-    this.scrollStarted = Date.now();
-    this.scrollIntraFrame += Math.round(event.deltaY / this.scrollUnit);
+  static _HandleScroll(event: WheelEvent) {
+    if (
+      Input.mouse.positionRaw.x < 0 ||
+      Input.mouse.positionRaw.x > Input._root.clientWidth ||
+      Input.mouse.positionRaw.y < 0 ||
+      Input.mouse.positionRaw.y > Input._root.clientHeight
+    )
+      return;
+
+    Input._scrollUnit = Math.min(Math.abs(event.deltaY), Input._scrollUnit);
+    // console.log(Input._scrollUnit);
+    Input._scrollStarted = Date.now();
+    Input._scrollIntraFrame += Math.round(event.deltaY / Input._scrollUnit);
   }
 
-  update(delta: number) {
-    super.update(delta);
+  static Update(delta: number) {
+    super.Update(delta);
 
     const mouse = Input.mouse;
 
-    mouse.justPressed = Input.mouse.pressed && !this.pressedLast;
-    mouse.justReleased = !Input.mouse.pressed && this.pressedLast;
+    mouse.justPressed = Input.mouse.pressed && !Input._pressedLast;
+    mouse.justReleased = !Input.mouse.pressed && Input._pressedLast;
 
     mouse.secondaryJustPressed =
-      Input.mouse.secondaryPressed && !this.secondaryPressedLast;
+      Input.mouse.secondaryPressed && !Input._secondaryPressedLast;
     mouse.secondaryJustReleased =
-      !Input.mouse.secondaryPressed && this.secondaryPressedLast;
+      !Input.mouse.secondaryPressed && Input._secondaryPressedLast;
 
-    this.pressedLast = Input.mouse.pressed;
-    this.secondaryPressedLast = Input.mouse.secondaryPressed;
+    Input._pressedLast = Input.mouse.pressed;
+    Input._secondaryPressedLast = Input.mouse.secondaryPressed;
 
     Input.mouse.justScrolled =
-      this.scrollStarted !== null &&
-      (this.scrollStartedLast === null ||
-        (Date.now() - this.scrollStarted > 100 &&
-          Date.now() - this.scrollStartedLast <= 100));
+      Input._scrollStarted !== null &&
+      (Input._scrollStartedLast === null ||
+        (Date.now() - Input._scrollStarted > 100 &&
+          Date.now() - Input._scrollStartedLast <= 100));
 
     // We count two scroll moves in the same 200ms as the same move.
-    if (this.scrollStarted && Date.now() - this.scrollStarted > 200) {
-      this.scrollStarted = null;
+    if (Input._scrollStarted && Date.now() - Input._scrollStarted > 200) {
+      Input._scrollStarted = null;
     }
-    this.scrollStartedLast = this.scrollStarted;
-    Input.mouse.scrollDelta = this.scrollIntraFrame;
-    this.scrollIntraFrame = 0;
+    Input._scrollStartedLast = Input._scrollStarted;
+    Input.mouse.scrollDelta = Input._scrollIntraFrame;
+    Input._scrollIntraFrame = 0;
   }
 }
 

@@ -17,14 +17,12 @@ class GrabberController extends TrackedObject<GrabberManagerData> {
   constructor() {
     const grabbers: any = {};
 
-    const clientIDs = PlayerManager.GetPlayers().map((p) => p.clientId);
+    const uid = PlayerManager.GetPlayers().map((p) => p.uid);
 
-    clientIDs.forEach((id) => {
+    uid.forEach((id) => {
       // Create a new grabber for each client
       const grabber =
-        id === PlayerManager.GetClientId()
-          ? new ClientGrabber(id)
-          : new Grabber(id);
+        id === PlayerManager.GetUID() ? new ClientGrabber(id) : new Grabber(id);
       grabbers[id] = grabber.identifier;
     });
 

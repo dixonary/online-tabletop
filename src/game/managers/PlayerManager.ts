@@ -1,55 +1,76 @@
+import Network from "../managers/Network";
+import Manager from "./Manager";
+import Log from "./Log";
 import TrackedObject from "../TrackedObject";
-import NetworkClient from "../managers/NetworkClient";
+import { EventHandler } from "../EventHandler";
 
 export type PlayerData = {
-  clientId: string;
+  uid: string;
+  userName: string;
 };
-type PlayerManagerData = {
-  players: {
-    [clientId: string]: PlayerData;
-  };
+export type AllPlayersData = {
+  [uid: string]: PlayerData;
 };
 
-class PlayerManager extends TrackedObject<PlayerManagerData> {
-  private static instance: PlayerManager;
+class PlayerManager extends Manager {
+  static me: PlayerData | null = null;
 
-  // We don't store this in the tracked state, because it's local
-  private clientId?: string;
+  static _data: AllPlayersData = {};
+  static _trackedObject: TrackedObject<AllPlayersData> | null = null;
 
-  constructor() {
-    super({ players: {} });
-  }
+  static events: EventHandler = new EventHandler();
 
   static Initialize() {
-    PlayerManager.instance = new PlayerManager();
+    super.Initialize();
+
+    const uid = localStorage.getItem("uid");
+    const userName = localStorage.getItem("userName");
+
+    if (uid === null) {
+      Log.Error("Couldn't find uid in local storage");
+    } else if (userName === null) {
+      Log.Error("Couldn't find username in local storage");
+    } else {
+      PlayerManager.me = { uid, userName };
+    }
 
     // We override the definitions here to avoid a circular dependency.
     // The dependency cycle was
-    // PlayerManager -> TrackedObject -> NetworkClient -> PlayerManager
-    NetworkClient.ReceivePlayerList = PlayerManager.SetPlayers;
-    NetworkClient.ReceiveClientId = PlayerManager.SetClientId;
+    // PlayerManager -> TrackedObject -> Network -> PlayerManager
+    Network.ReceivePlayerList = PlayerManager.SetPlayers;
   }
 
-  static SetPlayers(clients: { id: string }[]) {
-    const playerMap: any = {};
+  /**
+   * This will be called by the network client.
+   * @param clients
+   */
+  static SetPlayers(clients: PlayerData[]) {
+    const playerData: AllPlayersData = {};
 
     clients.forEach((c) => {
-      playerMap[c.id] = { clientId: c.id };
+      playerData[c.uid] = c;
     });
-    PlayerManager.instance.state.players.set(playerMap, false);
+
+    PlayerManager._data = playerData;
+    PlayerManager.events.event("players", playerData);
   }
 
+  /**
+   * Get the current list of players.
+   */
   static GetPlayers() {
     // Property order is deterministic so this should not vary!
-    return Object.values(PlayerManager.instance.state.players.get());
+    return Object.values(PlayerManager._data);
   }
 
-  static SetClientId(id: string) {
-    PlayerManager.instance.clientId = id;
-  }
-
-  static GetClientId() {
-    return PlayerManager.instance.clientId;
+  /**
+   * Get the UID of this client.
+   */
+  static GetUID() {
+    if (PlayerManager.me === null) {
+      throw new Error("Local user data was accessed before being set.");
+    }
+    return PlayerManager.me.uid;
   }
 }
 

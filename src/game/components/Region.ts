@@ -1,6 +1,5 @@
 import GameComponent, { GameComponentState } from "./GameComponent";
 import { Pos3, Quat, Dim3 } from "../StateStructures";
-import Authority from "../managers/Authority";
 import {
   BoxBufferGeometry,
   EdgesGeometry,
@@ -16,11 +15,12 @@ type RegionConstructorData = {
   pos: Pos3;
   quat?: Quat;
   dim: Dim3;
-  clientId?: string;
+  uid?: string;
 };
 
 type RegionState = GameComponentState & {
   objectIds: string[];
+  visible: boolean;
 };
 
 /**
@@ -36,22 +36,28 @@ class Region extends GameComponent<RegionState> {
   dimensions: Dim3;
   helperMesh: LineSegments;
 
-  constructor({ pos, quat, clientId, dim }: RegionConstructorData) {
+  constructor({ pos, quat, uid, dim }: RegionConstructorData) {
     super({
       selectable: false,
       grabbable: false,
-      owner: clientId ?? null,
+      owner: uid ?? null,
       grabber: null,
-      position: pos,
-      quaternion: quat ?? { x: 0, y: 0, z: 0, w: 0 },
+      pos: pos,
+      quat: quat ?? { x: 0, y: 0, z: 0, w: 0 },
       objectIds: [],
+      visible: false,
     });
 
     Region.AllRegions.push(this);
 
-    this.dimensions = { ...dim, height: 0.1 };
+    this.dimensions = { ...dim, height: 1 };
 
     this.helperMesh = this.makeHelperGeometry();
+
+    this.visible = this.state.visible.get();
+    this.state.visible.addHook((newVis) => {
+      this.visible = newVis;
+    });
   }
 
   dispose() {
@@ -61,7 +67,7 @@ class Region extends GameComponent<RegionState> {
 
   checkContains(p: Pos3) {
     const point = new Vector3(p.x, p.y, p.z);
-    const pos = this.state.position.get();
+    const pos = this.state.pos.get();
     const dim = this.dimensions;
     const box = new Box3(
       new Vector3(pos.x - dim.width / 2, pos.y, pos.z - dim.depth / 2),
@@ -85,14 +91,15 @@ class Region extends GameComponent<RegionState> {
    */
   makeHelperGeometry() {
     const dim = this.dimensions;
-    const geom = new BoxBufferGeometry(dim.width, dim.height, dim.depth);
+    const helperHeight = 0.001; // 1mm
+    const geom = new BoxBufferGeometry(dim.width, helperHeight, dim.depth);
     const edges = new EdgesGeometry(geom);
     const line = new LineSegments(
       edges,
       new MeshBasicMaterial({ color: "#ffffff" })
     );
     this.add(line);
-    line.position.setY(dim.height / 2 + 0.0005);
+    line.position.setY(helperHeight / 2 + 0.0005);
     return line;
   }
 
