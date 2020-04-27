@@ -43,8 +43,8 @@ class JoinRequests extends Manager {
 
     const jr = `<p>${escapedUsername} would like to join the game.</p>
       <div class="response-buttons">
-      <button className='button button-success' onClick="jr_${nonce}(true)">Accept</button>
-      <button className='button button-danger' onClick="jr_${nonce}(false)">Reject</button>
+      <button class='button button-success' onclick="jr_${nonce}(true)">Accept</button>
+      <button class='button button-danger' onclick="jr_${nonce}(false)">Reject</button>
       </div>
       `;
 

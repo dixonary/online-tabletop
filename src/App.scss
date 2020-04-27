@@ -43,6 +43,57 @@ main {
   overflow: hidden;
 }
 
+.connection-screen {
+  min-height: 100%;
+  background-color: #21232a;
+  padding: 2rem;
+
+  .login-form {
+    background-color: #efefff;
+    border-radius: 0.25rem;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .username-input {
+      height: unset;
+    }
+  }
+
+  .connection-log {
+    display: flex;
+    flex-direction: column-reverse;
+    margin-top: 2rem;
+    overflow-y: scroll;
+    height: 20rem;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.5);
+
+    font-family: monospace;
+    color: rgba(0, 0, 0, 0.8);
+
+    p {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.login-form {
+  background-color: #efefff;
+  border-radius: 0.25rem;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  .username-input {
+    height: unset;
+  }
+}
+
 .log {
   position: absolute;
   width: calc(100% - 10px);
@@ -105,4 +156,45 @@ main {
   position: absolute;
   top: 0;
   left: 0;
+}
+
+.join-request {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 0.25rem;
+  background-color: white;
+  padding: 0.5rem;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+  .response-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+
+    .button {
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-radius: 0.25rem;
+      flex-grow: 1;
+      overflow: hidden;
+      transition: background-color 0.2s;
+    }
+    .button:not(:last-child) {
+      margin-right: 0.5rem;
+    }
+
+    .button-success {
+      background-color: #2ac100;
+      &:hover {
+        background-color: lighten(#2ac100, 6);
+      }
+    }
+    .button-danger {
+      background-color: #f0292f;
+      &:hover {
+        background-color: lighten(#f0292f, 6);
+      }
+    }
+  }
 }

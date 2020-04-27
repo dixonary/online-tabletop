@@ -40,14 +40,14 @@ class GatewayClient {
     gameCode: string,
     uid: string,
     userName: string,
-    pending: boolean = false
+    isRepeat: boolean = false
   ) {
     const handleResponse = async (res: Response) => {
       if (res.status === 200) {
         this.events.event("join.ok");
       }
       if (res.status === 202) {
-        this.events.event("join.pending");
+        if (!isRepeat) this.events.event("join.pending");
         setTimeout(() => this.join(gameCode, uid, userName, true), 1000);
       }
       if (res.status === 400) {
@@ -64,7 +64,7 @@ class GatewayClient {
       }
     };
 
-    fetch(`${Network.server}/join${pending ? "/pending" : ""}`, {
+    fetch(`${Network.server}/join${isRepeat ? "/pending" : ""}`, {
       method: "post",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gameCode, uid, userName }),

@@ -44,9 +44,11 @@ const ConnectScreen = ({ children }: { children: React.ReactNode }) => {
       <div className="connection-screen">
         {children}
         <div className="connection-log">
-          {logLines.map((l, i) => (
-            <p key={i}>{l}</p>
-          ))}
+          <div className="inner-log">
+            {logLines.map((l, i) => (
+              <p key={i}>{l}</p>
+            ))}
+          </div>
         </div>
       </div>
     </ConnectScreenContext.Provider>
