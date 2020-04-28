@@ -21,7 +21,6 @@ class Physics extends Manager {
 
   static Dispose() {
     super.Dispose();
-    Log.Warn("TODO: implement scene cleanup");
   }
 }
 

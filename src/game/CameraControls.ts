@@ -21,6 +21,9 @@ class CameraControls extends BasicObject {
   private cameraBounds: Box3;
   private panning: boolean = false;
 
+  private zoomTarget: number | null = 0;
+  private smoothZoomCoefficient: number = 0.4;
+
   constructor(camera: PerspectiveCamera) {
     super();
     this.camera = camera;
@@ -64,11 +67,39 @@ class CameraControls extends BasicObject {
   update(delta: number) {
     super.update(delta);
 
-    const coll = this.computeRay();
+    this.updateZoom();
+    this.updatePan();
+  }
 
-    if (!coll) {
-      Log.Warn("No plane!");
+  updateZoom() {
+    if (
+      Input.mouse.scrollDelta !== 0 &&
+      ClientGrabber.instance &&
+      ClientGrabber.instance.state.grabbedObject.get() === null
+    ) {
+      if (!this.zoomTarget) this.zoomTarget = this.camera.zoom;
+      this.zoomTarget *= Math.pow(1.1, -Input.mouse.scrollDelta);
+      this.zoomTarget = Math.max(this.zoomTarget, 1);
+      this.zoomTarget = Math.min(this.zoomTarget, 4);
     }
+
+    if (this.zoomTarget) {
+      const diff = this.zoomTarget - this.camera.zoom;
+
+      if (Math.abs(diff) < 0.01) {
+        this.camera.zoom = this.zoomTarget;
+        this.zoomTarget = null;
+      } else {
+        this.camera.zoom +=
+          (this.zoomTarget - this.camera.zoom) * this.smoothZoomCoefficient;
+      }
+
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  updatePan() {
+    const coll = this.computeRay();
 
     if (
       Input.mouse.justPressed &&
@@ -77,17 +108,6 @@ class CameraControls extends BasicObject {
       ClientGrabber.instance.state.grabbedObject.get() === null
     ) {
       this.panning = true;
-    }
-
-    if (
-      Input.mouse.scrollDelta !== 0 &&
-      ClientGrabber.instance &&
-      ClientGrabber.instance.state.grabbedObject.get() === null
-    ) {
-      this.camera.zoom *= Math.pow(1.1, -Input.mouse.scrollDelta);
-      this.camera.zoom = Math.max(this.camera.zoom, 1);
-      this.camera.zoom = Math.min(this.camera.zoom, 4);
-      this.camera.updateProjectionMatrix();
     }
 
     if (Input.mouse.justReleased) {
@@ -111,7 +131,7 @@ class CameraControls extends BasicObject {
         this.camera.updateMatrixWorld();
         this.computeRay();
         this.dragLast.copy(this.dragCurrent);
-      }
+      } else Log.Warn("Couldn't find the panning plane!");
     }
   }
 }

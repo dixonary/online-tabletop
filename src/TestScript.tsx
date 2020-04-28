@@ -17,10 +17,10 @@ const TABLE_HEIGHT = 1;
 
 const seatController = new controller.SeatController([
   {
-    position: {x:0, y:TABLE_HEIGHT+0.5, z:0.5}
+    position: {x:0, y:TABLE_HEIGHT+0.5, z:0.25}
   },
   {
-    position: {x:0, y:TABLE_HEIGHT+0.5, z:-0.5}
+    position: {x:0, y:TABLE_HEIGHT+0.5, z:-0.25}
   }
 ],
   {x:0, y:TABLE_HEIGHT, z:0}

@@ -183,6 +183,7 @@ class StateManager extends Manager {
    */
   static Create({ identifier, className, params }: Creation) {
     // TODO upgrade this so it can create anything, not just things that are "components"
+    // TODO this doesn't honour the name that the object was created with
     new (window as any).component[className](...params);
   }
 
