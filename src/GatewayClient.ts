@@ -1,6 +1,6 @@
 import { EventHandler } from "./game/EventHandler";
 import fetch, { Response } from "node-fetch";
-import Network from "./game/managers/Network";
+import { Network } from "./game/manager";
 
 /**
  * This class helps us to navigate the gateway.

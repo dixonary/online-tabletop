@@ -1,9 +1,8 @@
 import { Raycaster, Vector3, Plane, Box3, PerspectiveCamera } from "three";
 import BasicObject from "./BasicObject";
-import Input from "./managers/Input";
-import { ClientSeat } from "./components/Seat";
-import ClientGrabber from "./components/ClientGrabber";
-import Log from "./managers/Log";
+import { Input, Log } from "./manager/";
+import { ClientSeat } from "./component/Seat";
+import { ClientGrabber } from "./component/Grabber";
 
 class CameraControls extends BasicObject {
   private camera: PerspectiveCamera;

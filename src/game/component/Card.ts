@@ -16,7 +16,7 @@ import { Texture } from "../resource";
 import { ResizeToFit } from "../GeometryTools";
 import { Pos3, Quat } from "../StateStructures";
 import * as CANNON from "cannon";
-import PlayerManager from "../managers/PlayerManager";
+import PlayerManager from "../manager/PlayerManager";
 
 export type CardState = AbstractCardData & PhysicalCardState;
 

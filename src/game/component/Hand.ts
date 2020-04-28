@@ -1,9 +1,8 @@
-import Region from "./Region";
-import { Quat, Pos3, ToQuaternion, FromQuaternion } from "../StateStructures";
-import StateManager from "../managers/StateManager";
-import GameComponent, { GameComponentState } from "./GameComponent";
 import { Vector3, Quaternion } from "three";
-import Card from "./Card";
+import { Quat, Pos3, ToQuaternion, FromQuaternion } from "../StateStructures";
+import { StateManager } from "../manager/";
+import { GameComponentState } from "./GameComponent";
+import { Region, Card, GameComponent } from "./";
 
 type HandConstructorData = {
   pos: Pos3;

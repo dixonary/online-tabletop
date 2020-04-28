@@ -1,5 +1,3 @@
-import { STL, TextureList } from "../resource";
-import GameComponent from "./GameComponent";
 import {
   Mesh,
   Vector3,
@@ -9,10 +7,13 @@ import {
   Box3,
   MeshPhongMaterial,
 } from "three";
+import * as CANNON from "cannon";
+
+import { STL, TextureList } from "../resource";
+import { GameComponent } from "./";
 import { AutoUV, ResizeToFit } from "../GeometryTools";
 import { Dim3, Pos3, Quat } from "../StateStructures";
-import * as CANNON from "cannon";
-import Physics from "../managers/Physics";
+import { Physics } from "../manager";
 
 type TabletopState = {
   owner: string | null;

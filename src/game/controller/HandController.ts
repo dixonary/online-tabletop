@@ -1,7 +1,7 @@
-import PlayerManager from "../managers/PlayerManager";
+import { PlayerManager } from "../manager";
 import { Pos3, Quat } from "../StateStructures";
 import BasicObject from "../BasicObject";
-import Hand from "../components/Hand";
+import { Hand } from "../component";
 
 /**
  * A device for setting up players' seats.

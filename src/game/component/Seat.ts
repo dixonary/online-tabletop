@@ -45,4 +45,5 @@ class ClientSeat extends Seat {
   }
 }
 
-export { Seat, ClientSeat };
+export default Seat;
+export { ClientSeat };

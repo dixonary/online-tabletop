@@ -1,10 +1,9 @@
 import { Mesh, Vector3, Quaternion } from "three";
-import Log from "../managers/Log";
+import * as CANNON from "cannon";
+
 import { Pos3, Quat } from "../StateStructures";
 import TrackedObject from "../TrackedObject";
-import * as CANNON from "cannon";
-import Physics from "../managers/Physics";
-import Game from "../Game";
+import { Log, Physics } from "../manager/";
 
 export type GameComponentState = {
   pos: Pos3; // The position of the object.

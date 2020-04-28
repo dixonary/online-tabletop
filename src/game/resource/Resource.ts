@@ -1,6 +1,5 @@
 import { EventHandler } from "../EventHandler";
-import Log from "../managers/Log";
-import LoadingManager from "../managers/LoadingManager";
+import { Log, LoadingManager } from "../manager/";
 
 class Resource {
   loaded: boolean = false;

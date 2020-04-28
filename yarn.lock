@@ -9367,6 +9367,11 @@ react-router@^5.1.2:
     tiny-invariant "^1.0.2"
     tiny-warning "^1.0.0"
 
+react-scripts-plugin-no-minify@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/react-scripts-plugin-no-minify/-/react-scripts-plugin-no-minify-0.4.0.tgz#65f75e8aa5203494aac26798b4cca0c7ad471f4d"
+  integrity sha512-vASbAQ+FCvCduyg2ojGY878zHvqFhXLUEDgtQ1G/Edj/y+pEfBY4QVpcn0YApAHQ0YmBkeSiDCRhw1hu5inwWg==
+
 react-scripts@3.4.1:
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/react-scripts/-/react-scripts-3.4.1.tgz#f551298b5c71985cc491b9acf3c8e8c0ae3ada0a"

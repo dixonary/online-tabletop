@@ -1,8 +1,6 @@
-import StateManager, { Stateful, ObjectState } from "./managers/StateManager";
-import IDManager from "./managers/IDManager";
-import Network from "./managers/Network";
+import { IDManager, StateManager, Network, Authority } from "./manager/";
+import { Stateful, ObjectState } from "./manager/StateManager";
 import BasicObject from "./BasicObject";
-import Authority from "./managers/Authority";
 
 /**
  * A TrackedObject is some object with coherent state, shared between all clients.

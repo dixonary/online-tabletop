@@ -1,7 +1,8 @@
-import PlayerManager from "../managers/PlayerManager";
+import { PlayerManager } from "../manager";
 import { Pos3 } from "../StateStructures";
+import { Seat } from "../component";
+import { ClientSeat } from "../component/Seat";
 import BasicObject from "../BasicObject";
-import { Seat, ClientSeat } from "../components/Seat";
 
 /**
  * A device for setting up players' seats.

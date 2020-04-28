@@ -1,5 +1,3 @@
-import GameComponent, { GameComponentState } from "./GameComponent";
-import { Pos3, Quat, Dim3 } from "../StateStructures";
 import {
   BoxBufferGeometry,
   EdgesGeometry,
@@ -9,7 +7,10 @@ import {
   Vector3,
   Matrix4,
 } from "three";
-import StateManager from "../managers/StateManager";
+import { GameComponent } from "./";
+import { GameComponentState } from "./GameComponent";
+import { Pos3, Quat, Dim3 } from "../StateStructures";
+import { StateManager } from "../manager/";
 
 type RegionConstructorData = {
   pos: Pos3;
