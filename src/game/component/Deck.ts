@@ -12,10 +12,10 @@ import {
   Material,
 } from "three";
 import { ResizeToFit } from "../GeometryTools";
-import { GameComponentState } from "./GameComponent";
+import GameComponent, { GameComponentState } from "./GameComponent";
 import { StateManager, Authority } from "../manager/";
 import Card, { AbstractCardData } from "./Card";
-import { GameComponent, Region, Grabber } from "./";
+import { Region, Grabber } from "./";
 import { Pos3 } from "../StateStructures";
 
 type DeckState = GameComponentState & {

@@ -10,7 +10,7 @@ import {
 import * as CANNON from "cannon";
 
 import { STL, TextureList } from "../resource";
-import { GameComponent } from "./";
+import GameComponent from "./GameComponent";
 import { AutoUV, ResizeToFit } from "../GeometryTools";
 import { Dim3, Pos3, Quat } from "../StateStructures";
 import { Physics } from "../manager";

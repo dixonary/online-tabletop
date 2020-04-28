@@ -4,7 +4,6 @@ import Input from "./Input";
 import JoinRequests from "./JoinRequests";
 import LoadingManager from "./LoadingManager";
 import Log from "./Log";
-import Manager from "./Manager";
 import Network from "./Network";
 import Overlay from "./Overlay";
 import Physics from "./Physics";
@@ -20,7 +19,6 @@ export {
   JoinRequests,
   LoadingManager,
   Log,
-  Manager,
   Network,
   Overlay,
   Physics,

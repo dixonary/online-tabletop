@@ -10,13 +10,14 @@ import {
   Clock,
 } from "three";
 
+import Manager from "./manager/Manager";
+
 import {
   Log,
   Network,
   StateManager,
   Input,
   IDManager,
-  Manager,
   Overlay,
   LoadingManager,
   PlayerManager,
@@ -186,6 +187,7 @@ class Game {
     (window as any).resource = resource;
     (window as any).component = component;
     (window as any).controller = controller;
+    (window as any).manager = manager;
     (window as any).struct = struct;
     (window as any).THREE = THREE;
 

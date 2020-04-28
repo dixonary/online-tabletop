@@ -6,8 +6,8 @@ import {
   PlaneHelper,
   Intersection,
 } from "three";
-import { GameComponent, Region } from "./";
-import { GameComponentState } from "./GameComponent";
+import { Region } from "./";
+import GameComponent, { GameComponentState } from "./GameComponent";
 import { Input, Tooltip, Authority, StateManager } from "../manager";
 import Game from "../Game";
 

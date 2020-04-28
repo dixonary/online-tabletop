@@ -7,8 +7,7 @@ import {
   Vector3,
   Matrix4,
 } from "three";
-import { GameComponent } from "./";
-import { GameComponentState } from "./GameComponent";
+import GameComponent, { GameComponentState } from "./GameComponent";
 import { Pos3, Quat, Dim3 } from "../StateStructures";
 import { StateManager } from "../manager/";
 

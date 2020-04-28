@@ -1,4 +1,5 @@
-import { Network, Manager, Log } from "./";
+import Manager from "./Manager";
+import { Network, Log } from "./";
 import TrackedObject from "../TrackedObject";
 import { EventHandler } from "../EventHandler";
 

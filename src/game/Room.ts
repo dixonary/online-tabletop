@@ -9,6 +9,7 @@ import {
 } from "three";
 import { AutoUV, ApplyFaceMaterials } from "./GeometryTools";
 import { TextureList, Texture } from "./resource";
+import * as CANNON from "cannon";
 import Game from "./Game";
 
 class Room extends Mesh {

@@ -39,8 +39,8 @@ export type FullState = {
 class Network extends Manager {
   static socket: SocketIOClient.Socket;
   static roomCode: string | undefined;
-  // static server = "http://142.93.46.65:3001";
-  static server = "http://douglas:3001";
+  static server = "http://142.93.46.65:3001";
+  // static server = "http://douglas:3001";
   static isHost = false;
   static stateMode: StateMode = StateMode.LOCAL;
 

@@ -1,8 +1,8 @@
 import { Vector3, Quaternion } from "three";
 import { Quat, Pos3, ToQuaternion, FromQuaternion } from "../StateStructures";
 import { StateManager } from "../manager/";
-import { GameComponentState } from "./GameComponent";
-import { Region, Card, GameComponent } from "./";
+import GameComponent, { GameComponentState } from "./GameComponent";
+import { Region, Card } from "./";
 
 type HandConstructorData = {
   pos: Pos3;
