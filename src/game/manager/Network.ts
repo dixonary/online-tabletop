@@ -167,25 +167,6 @@ class Network extends Manager {
     Game.instance.sceneCode = sceneCode;
   }
 
-  // static Host(sceneCode: string) {
-  //   const socket = Network.socket;
-  //   socket.on("code", Network.ReceiveRoomCode);
-  //   socket.on("start", () => {
-  //     Game.instance.loadScene();
-  //   });
-  //   Network.isHost = true;
-  //   socket.emit("host", sceneCode, Network.userIdentifier);
-  // }
-
-  // static Join(roomCode: string) {
-  //   const socket = Network.socket;
-  //   socket.on("start", () => {
-  //     Game.instance.loadScene();
-  //   });
-  //   socket.emit("join", roomCode, Network.userIdentifier);
-  //   socket.on("fast forward", Network.FastForward);
-  // }
-
   static ReceiveRoomCode(code: string) {
     Network.roomCode = code;
     Log.Success(`The room code is: ${code}`);

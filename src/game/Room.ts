@@ -1,6 +1,5 @@
 import {
   Mesh,
-  LinearFilter,
   BoxGeometry,
   MeshBasicMaterial,
   BackSide,
@@ -8,19 +7,13 @@ import {
   Material,
 } from "three";
 import { AutoUV, ApplyFaceMaterials } from "./GeometryTools";
-import { TextureList, Texture } from "./resource";
+import { TextureList } from "./resource";
 import * as CANNON from "cannon";
 import Game from "./Game";
 
 class Room extends Mesh {
   constructor() {
     super();
-
-    const texture = Texture.get(
-      process.env.PUBLIC_URL + "/resources/fireplace.jpg"
-    ).value;
-    texture.magFilter = LinearFilter;
-    texture.minFilter = LinearFilter;
 
     // Generate the room geometry
     const w = 6;
@@ -92,6 +85,9 @@ class Room extends Mesh {
     // Add to the scene
     this.position.setY(h / 2);
     Game.instance.scene.add(this);
+
+    this.matrixAutoUpdate = false;
+    this.updateMatrix();
   }
 
   dispose() {

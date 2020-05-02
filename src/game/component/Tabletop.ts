@@ -49,6 +49,12 @@ class Tabletop extends GameComponent<TabletopState> {
     });
 
     this.state.selectable.set(false);
+
+    this.matrixAutoUpdate = false;
+
+    this.state.addComputedProperty(["pos", "quat"], ({ pos, quat }) => {
+      this.updateMatrix();
+    });
   }
 
   createBody(width: number, height: number, depth: number) {

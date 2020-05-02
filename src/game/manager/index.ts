@@ -11,6 +11,7 @@ import PlayerManager from "./PlayerManager";
 import StateManager from "./StateManager";
 import Tooltip from "./Tooltip";
 import Trash from "./Trash";
+import FPS from "./FPS";
 
 export {
   Authority,
@@ -26,4 +27,5 @@ export {
   StateManager,
   Tooltip,
   Trash,
+  FPS,
 };

@@ -4,7 +4,6 @@ import {
   WebGLRenderer,
   AmbientLight,
   SpotLight,
-  HemisphereLight,
   Vector2,
   Color,
   Clock,
@@ -26,6 +25,7 @@ import {
   Physics,
   Trash,
   JoinRequests,
+  FPS,
 } from "./manager/";
 
 import { StateMode } from "./manager/Network";
@@ -107,7 +107,7 @@ class Game {
 
     // Initialize global managers
 
-    const rootedManagers = [Log, Input, Tooltip, Overlay, JoinRequests];
+    const rootedManagers = [Log, Input, Tooltip, Overlay, JoinRequests, FPS];
     rootedManagers.forEach((m) => m.Initialize(root));
 
     const plainManagers = [
@@ -153,8 +153,10 @@ class Game {
     renderer.setClearColor("#D9C2F0");
     renderer.autoClearColor = false;
     renderer.setSize(0, 0);
-    renderer.shadowMap.enabled = true;
     renderer.autoClearColor = false;
+    renderer.physicallyCorrectLights = true;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.root.appendChild(renderer.domElement);
     return renderer;
   }
@@ -165,16 +167,6 @@ class Game {
     camera.position.y = 1;
     return camera;
   }
-
-  // hostRoom(sceneCode: string) {
-  //   Log.Info("Connecting...");
-  //   Network.Host(sceneCode);
-  // }
-
-  // joinRoom(roomCode: string) {
-  //   Log.Info("Connecting...");
-  //   Network.Join(roomCode);
-  // }
 
   begin() {
     requestAnimationFrame(this.update.bind(this));
@@ -236,20 +228,16 @@ class Game {
   }
 
   addLighting() {
-    var ambient = new AmbientLight("#444"); // soft white light
+    var ambient = new AmbientLight("#444", 10); // soft white light
     this.scene.add(ambient);
 
-    var spotty = new SpotLight("#666");
+    var spotty = new SpotLight("#666", 5);
     spotty.position.set(0, 2.5, 0);
-    spotty.angle = Math.PI / 2.5;
-    spotty.castShadow = true;
+    spotty.angle = Math.PI / 4;
     this.scene.add(spotty);
 
-    spotty.shadow.mapSize = new Vector2(4096, 4096);
-
-    var hemi = new HemisphereLight("#666");
-    hemi.position.set(0, 2.5, 0);
-    this.scene.add(hemi);
+    spotty.castShadow = true;
+    spotty.shadow.mapSize = new Vector2(2048, 2048);
   }
 
   dispose() {
@@ -259,6 +247,7 @@ class Game {
   update() {
     // Run the update step on any scene objects which implement the update interface
     const delta = this.clock.getDelta();
+    FPS.Begin();
 
     this.scene.traverse((o: any) => {
       if (o.update) o.update(delta);
@@ -270,8 +259,10 @@ class Game {
     // when the geometries pop in!
     if (LoadingManager.ready) Physics.world.step(1 / 120, delta);
 
-    requestAnimationFrame(this.update.bind(this));
     this.render();
+    FPS.End();
+
+    requestAnimationFrame(this.update.bind(this));
   }
 
   render() {

@@ -1,5 +1,4 @@
 import { World, SAPBroadphase } from "cannon";
-import Log from "./Log";
 import Manager from "./Manager";
 
 class Physics extends Manager {
